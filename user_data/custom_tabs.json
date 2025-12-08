@@ -1,0 +1,66 @@
+{
+  "tabs": [
+    {
+      "id": "custom_1765085161636",
+      "name": "Beam Bending",
+      "icon": "\ud83d\udcd0",
+      "equationSets": [
+        {
+          "id": "eq_1765094410799",
+          "title": "New Equation Set",
+          "description": "Add your equations here",
+          "equations": "// Enter your equations\nx = 5\ny = x * 2"
+        },
+        {
+          "id": "eq_1765094411736",
+          "title": "New Equation Set",
+          "description": "Add your equations here",
+          "equations": "// Enter your equations\nx = 5\ny = x * 2"
+        },
+        {
+          "id": "eq_1765094411922",
+          "title": "New Equation Set",
+          "description": "Add your equations here",
+          "equations": "// Enter your equations\nx = 5\ny = x * 2"
+        },
+        {
+          "id": "eq_1765094412087",
+          "title": "New Equation Set",
+          "description": "Add your equations here",
+          "equations": "// Enter your equations\nx = 5\ny = x * 2"
+        },
+        {
+          "id": "eq_1765094412253",
+          "title": "New Equation Set",
+          "description": "Add your equations here",
+          "equations": "// Enter your equations\nx = 5\ny = x * 2"
+        }
+      ]
+    },
+    {
+      "id": "custom_1765094423734",
+      "name": "Pipe Pressure Drops",
+      "icon": "\ud83d\udcd0",
+      "equationSets": [
+        {
+          "id": "eq_1765094430693",
+          "title": "New Equation Set",
+          "description": "Add your equations here",
+          "equations": "// Enter your equations\nx = 5\ny = x * 2"
+        },
+        {
+          "id": "eq_1765094430916",
+          "title": "New Equation Set",
+          "description": "Add your equations here",
+          "equations": "// Enter your equations\nx = 5\ny = x * 2"
+        },
+        {
+          "id": "eq_1765094431092",
+          "title": "New Equation Set",
+          "description": "Add your equations here",
+          "equations": "// Enter your equations\nx = 5\ny = x * 2"
+        }
+      ]
+    }
+  ]
+}

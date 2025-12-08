@@ -1,0 +1,421 @@
+/**
+ * Settings.css
+ * Styles for the settings component - uses main app CSS variables
+ */
+
+.settings-container {
+    padding: 2rem;
+    max-width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    background-color: var(--bg-primary);
+    animation: settingsFadeIn 0.3s ease-in-out;
+}
+
+@keyframes settingsFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.settings-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-header h1 {
+    font-size: 2rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.settings-header p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.settings-layout {
+    display: flex;
+    gap: 2rem;
+    min-height: calc(100vh - 200px);
+}
+
+/* Navigation */
+.settings-nav {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
+}
+
+.settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.settings-nav-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.settings-nav-item.active {
+    background: linear-gradient(to right, var(--accent-glow), transparent);
+    border-left: 3px solid var(--accent-primary);
+    color: var(--accent-primary);
+    border-radius: 4px 8px 8px 4px;
+}
+
+.settings-nav-item .nav-icon {
+    font-size: 1.2rem;
+}
+
+.settings-nav-item .nav-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Content Area */
+.settings-content {
+    flex: 1;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+/* Section Content */
+.settings-section-content h2 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--accent-primary);
+}
+
+.settings-section-content h3 {
+    font-size: 1.15rem;
+    color: var(--text-primary);
+    margin: 1.5rem 0 1rem;
+}
+
+.settings-section-content h4 {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin: 1rem 0 0.5rem;
+}
+
+.settings-section-content p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+/* Info Cards */
+.settings-info-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin: 1rem 0;
+}
+
+.settings-info-card.highlight {
+    background: var(--accent-glow);
+    border-color: var(--accent-primary);
+}
+
+.settings-info-card h3,
+.settings-info-card h4 {
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.settings-info-card p {
+    margin-bottom: 0;
+}
+
+/* Settings Groups */
+.settings-group {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.control-group {
+    margin-bottom: 1.5rem;
+}
+
+.control-group:last-child {
+    margin-bottom: 0;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.control-description {
+    color: var(--text-tertiary) !important;
+    font-size: 0.85rem !important;
+    margin-bottom: 0.75rem !important;
+    margin-top: 0;
+}
+
+.slider-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: center;
+}
+
+.slider-value {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    color: var(--text-tertiary);
+    min-width: 4ch;
+    text-align: right;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--bg-primary);
+    border-radius: 3px;
+    outline: none;
+}
+
+/* Hue Slider Gradient */
+.hue-slider {
+    background: linear-gradient(to right,
+            #f00 0%, #ff0 17%, #0f0 33%,
+            #0ff 50%, #00f 67%, #f0f 83%, #f00 100%) !important;
+}
+
+/* Brightness Slider Gradient */
+.brightness-slider {
+    background: linear-gradient(to right, #000, #fff) !important;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--bg-secondary);
+    transition: transform 0.1s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+/* Preview Box */
+.preview-box {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.preview-button {
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+    border: none;
+    cursor: default;
+    box-shadow: 0 4px 12px var(--accent-glow);
+    transition: all 0.2s ease;
+}
+
+.preview-text {
+    margin-top: 1rem !important;
+    color: var(--text-tertiary) !important;
+    font-size: 0.9rem !important;
+}
+
+/* Action Row */
+.action-row {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.reset-button {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.reset-button:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: var(--accent-glow);
+}
+
+/* Feature List (Coming Soon items) */
+.feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.feature-item.disabled {
+    opacity: 0.5;
+}
+
+.feature-item:not(.disabled):hover {
+    border-color: var(--accent-primary);
+    background: var(--accent-glow);
+}
+
+.feature-item .feature-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.feature-info h4 {
+    color: var(--text-primary);
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+}
+
+.feature-info p {
+    color: var(--text-tertiary);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* About Section */
+.about-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.about-feature {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.about-icon {
+    font-size: 1.25rem;
+}
+
+.tech-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.tech-badge {
+    background: var(--accent-glow);
+    border: 1px solid var(--accent-primary);
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: var(--accent-primary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .settings-layout {
+        flex-direction: column;
+    }
+
+    .settings-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        position: static;
+        width: 100%;
+    }
+
+    .settings-nav-item {
+        flex: 1;
+        min-width: 120px;
+        justify-content: center;
+    }
+
+    .settings-nav-item .nav-label {
+        display: none;
+    }
+
+    .settings-content {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .settings-container {
+        padding: 1rem;
+    }
+
+    .settings-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .about-features {
+        grid-template-columns: 1fr;
+    }
+}

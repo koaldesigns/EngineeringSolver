@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+scipy
+numpy
+pint
+CoolProp
+sympy
+pydantic
+plotly

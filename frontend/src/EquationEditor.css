@@ -1,0 +1,737 @@
+/*
+ * EquationEditor.css
+ *
+ * ============================================================================
+ * ⚠️  FEATURE PARITY: Keep styles in sync with Instructions.css  ⚠️
+ * ============================================================================
+ *
+ * If you add styles for a new feature here, you MUST also add equivalent
+ * styles to Instructions.css for the mini editors.
+ *
+ * See: .agent/workflows/editor-feature-parity.md
+ * ============================================================================
+ */
+
+.editor-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--bg-primary);
+    position: relative;
+}
+
+/* Header Section */
+.editor-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(9, 9, 11, 0.8);
+    /* Semi-transparent */
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+    z-index: 20;
+}
+
+.editor-header h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+.run-button {
+    background: var(--accent-primary);
+    color: white;
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 12px var(--accent-glow);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.run-button:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px var(--accent-glow);
+}
+
+.run-button:active {
+    transform: translateY(0);
+}
+
+.run-button:disabled {
+    background-color: var(--bg-tertiary);
+    color: var(--text-tertiary);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Main Editor Area */
+.editor-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg-primary);
+}
+
+.input-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 2rem;
+}
+
+.equation-input {
+    flex: 1;
+    width: 100%;
+    background-color: transparent;
+    /* Seamless feel */
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 1.5rem;
+    color: var(--text-primary);
+    font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: none;
+    outline: none;
+    transition: all 0.2s ease;
+    min-height: 200px;
+}
+
+/* Subtle line numbers or gutter could act as a visual anchor, 
+   but for now just a subtle hover state */
+.equation-input:hover {
+    background-color: rgba(255, 255, 255, 0.01);
+}
+
+.equation-input:focus {
+    background-color: rgba(255, 255, 255, 0.02);
+    box-shadow: none;
+    /* Clean look, cursor is enough or line highlight */
+}
+
+/* Output Section - Glassmorphism */
+.output-section {
+    flex-shrink: 0;
+    background-color: rgba(15, 16, 20, 0.95);
+    /* Deep dark */
+    border-top: 1px solid var(--border-color);
+    padding: 1.5rem 2rem;
+    max-height: 45vh;
+    overflow-y: auto;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    position: relative;
+}
+
+.output-section::before {
+    /* Glass highlight on top edge */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    opacity: 0.5;
+}
+
+.output-header {
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.output-header h3 {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.output-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+/* Results Grid */
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.result-card {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.95rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.result-card:hover {
+    border-color: var(--accent-primary);
+    background-color: var(--accent-glow);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.var-name {
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
+.equals {
+    color: var(--text-tertiary);
+}
+
+.var-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Unit Badge - Refined Pill */
+.unit-badge {
+    margin-left: auto;
+    padding: 0.2em 0.6em;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    font-family: 'Inter', sans-serif;
+    /* Cleaner font for units */
+
+    /* Dynamic color based on hue variable */
+    background-color: hsla(var(--unit-hue), 70%, 15%, 0.3);
+    /* Darker, subtler bg */
+    color: hsl(var(--unit-hue), 80%, 75%);
+    /* Pastel text */
+    border: 1px solid hsla(var(--unit-hue), 60%, 30%, 0.3);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+}
+
+.unit-badge-inline {
+    padding: 0.15em 0.5em;
+    border-radius: 5px;
+    font-size: 0.9em;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    background-color: hsla(var(--unit-hue), 70%, 15%, 0.3);
+    color: hsl(var(--unit-hue), 80%, 75%);
+    border: 1px solid hsla(var(--unit-hue), 60%, 30%, 0.3);
+    display: inline-flex;
+    align-items: baseline;
+    vertical-align: middle;
+    margin: 0 0.3em;
+}
+
+/* Make superscript exponents larger and more readable */
+.unit-exponent {
+    font-size: 1.5em;
+    /* Make exponents 50% larger than base text */
+    font-weight: 700;
+    /* Bolder for visibility */
+    vertical-align: baseline;
+    line-height: 1;
+}
+
+/* Warnings */
+.unit-warnings {
+    background-color: rgba(245, 158, 11, 0.05);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.warning-header {
+    font-weight: 600;
+    color: var(--warning);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.warning-item {
+    color: var(--text-secondary);
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+}
+
+/* Mismatch Styles */
+.unit-mismatch {
+    border-color: rgba(239, 68, 68, 0.3);
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+.unit-mismatch:hover {
+    border-color: rgba(239, 68, 68, 0.5);
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.unit-mismatch .unit-badge {
+    border-color: rgba(239, 68, 68, 0.4);
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    /* Override hue color */
+    color: #fca5a5 !important;
+}
+
+.mismatch-icon {
+    margin-right: 0.3em;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* ============================================================================
+   UNIT CONFIRMATION STYLES
+   ============================================================================ */
+
+/* Unconfirmed propagated units - prominent dashed border */
+.unit-badge.unit-unconfirmed {
+    border-style: dashed;
+    border-width: 2px;
+    border-color: hsla(var(--unit-hue), 70%, 50%, 0.7);
+    animation: unconfirmed-pulse 2s ease-in-out infinite;
+}
+
+@keyframes unconfirmed-pulse {
+
+    0%,
+    100% {
+        opacity: 0.75;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.unit-badge.unit-unconfirmed:hover {
+    opacity: 1;
+    animation: none;
+}
+
+/* Unconfirmed indicator - small pulsing dot before the unit */
+.unconfirmed-icon {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: hsl(var(--unit-hue), 80%, 60%);
+    margin-right: 0.4em;
+    animation: dot-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(0.9);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
+/* Confirmed units - solid border (default styling) */
+.unit-badge.unit-confirmed {
+    border-style: solid;
+}
+
+/* Context menu confirm item highlight */
+.context-menu-item.confirm-unit-item {
+    color: var(--success, #10b981);
+}
+
+.context-menu-item.confirm-unit-item .menu-icon {
+    color: var(--success, #10b981);
+}
+
+/* Modal confirmation checkbox */
+.modal-confirm-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.modal-confirm-checkbox:hover {
+    background: rgba(245, 158, 11, 0.12);
+}
+
+.modal-confirm-checkbox input[type="checkbox"] {
+    accent-color: var(--accent-primary);
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.modal-confirm-checkbox span {
+    line-height: 1.4;
+}
+
+/* Unit source badge in modal */
+.unit-source-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.5rem;
+    padding: 0.15em 0.5em;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-tertiary, #888);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    text-transform: lowercase;
+}
+
+/* ============================================================================
+   ARRAY SOLVE STYLES
+   ============================================================================ */
+
+.array-solve-indicator {
+    background: linear-gradient(135deg, rgba(var(--accent-color-rgb, 0, 212, 255), 0.15), rgba(var(--accent-color-rgb, 0, 212, 255), 0.05));
+    border: 1px solid rgba(var(--accent-color-rgb, 0, 212, 255), 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.array-result {
+    cursor: default;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.array-result .array-header-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.array-result .array-badge {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: rgba(var(--accent-color-rgb, 0, 212, 255), 0.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid rgba(var(--accent-color-rgb, 0, 212, 255), 0.25);
+    margin-left: 0.5rem;
+    user-select: none;
+}
+
+.array-result .array-stats {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.array-result .array-stats .stat {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+}
+
+.array-result.array-expanded {
+    background: var(--bg-secondary);
+}
+
+.array-values-expanded {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.array-value-item {
+    background: var(--bg-tertiary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+/* Editor Actions */
+.editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.unit-selector {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.unit-selector:focus {
+    border-color: var(--accent-primary);
+}
+
+.unit-selector:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Key Variables Section */
+.key-variables-section {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.key-variable-card {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.key-variable-card:hover {
+    border-color: var(--warning);
+}
+
+/* Unit Override */
+.unit-override {
+    background: var(--accent-glow);
+    border-color: var(--accent-primary);
+}
+
+/* ============================================================================
+   ARRAY RESULTS TABLE STYLES
+   ============================================================================ */
+
+.array-table-container {
+    margin-top: 1rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.array-table-container.key-section {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.25);
+}
+
+.array-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.array-table-header:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.array-table-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.array-count-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: rgba(var(--accent-color-rgb, 0, 212, 255), 0.15);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid rgba(var(--accent-color-rgb, 0, 212, 255), 0.25);
+}
+
+.array-table-toggle {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.35rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.array-table-toggle:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+.array-table-wrapper {
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.array-results-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+}
+
+.array-results-table th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    z-index: 1;
+}
+
+.array-results-table th.index-column {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    width: 60px;
+    min-width: 60px;
+}
+
+.array-results-table th.variable-column {
+    cursor: context-menu;
+    min-width: 120px;
+}
+
+.array-results-table th .var-header-name {
+    color: var(--accent-primary);
+    font-weight: 600;
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+/* Unit badge in table header - inherits base unit-badge styling */
+.array-results-table th .unit-badge {
+    margin-left: 0.35rem;
+    font-size: 0.85rem;
+    padding: 0.15em 0.5em;
+    vertical-align: middle;
+}
+
+.array-results-table td {
+    padding: 0.5rem 1rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    transition: background-color 0.15s ease;
+}
+
+.array-results-table td.index-cell {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.array-results-table td.value-cell {
+    cursor: context-menu;
+}
+
+.array-results-table td.value-cell:hover {
+    background: var(--accent-glow);
+}
+
+.array-results-table tbody tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.array-results-table tbody tr:hover {
+    background: rgba(var(--accent-color-rgb, 0, 212, 255), 0.08);
+}
+
+/* Scrollbar styling for the table wrapper */
+.array-table-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.array-table-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.array-table-wrapper::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.array-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}

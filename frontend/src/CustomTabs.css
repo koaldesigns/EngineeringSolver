@@ -1,0 +1,478 @@
+/* Custom Tabs Styling */
+
+.custom-tab-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.custom-tab-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.custom-tab-title-row .tab-icon {
+    font-size: 2rem;
+}
+
+.custom-tab-title-row h1 {
+    margin: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.custom-tab-title-row .edit-hint {
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.custom-tab-title-row h1:hover .edit-hint {
+    opacity: 0.6;
+}
+
+.tab-name-input {
+    font-size: 1.75rem;
+    font-weight: 700;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--accent-primary);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 0.25rem 0.75rem;
+    min-width: 200px;
+}
+
+.custom-tab-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.action-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.action-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+}
+
+.action-btn.add-btn {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+    border-color: rgba(34, 197, 94, 0.4);
+}
+
+.action-btn.add-btn:hover {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(34, 197, 94, 0.2) 100%);
+    border-color: rgba(34, 197, 94, 0.6);
+}
+
+.action-btn.export-btn {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.action-btn.export-btn:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.2) 100%);
+    border-color: rgba(59, 130, 246, 0.6);
+}
+
+.action-btn.delete-btn {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.action-btn.delete-btn:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.2) 100%);
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
+.delete-confirm {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(239, 68, 68, 0.15);
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.delete-confirm span {
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.confirm-yes,
+.confirm-no {
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.confirm-yes {
+    background: #ef4444;
+    color: white;
+}
+
+.confirm-no {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.empty-tab-message {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    border: 2px dashed var(--border-color);
+    color: var(--text-secondary);
+}
+
+.empty-tab-message p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* Editable Mini Editor Wrapper - must match .mini-editor-card width from Instructions.css */
+.editable-mini-editor {
+    position: relative;
+    margin-bottom: 1.5rem;
+    width: 100%;
+    max-width: 900px;
+}
+
+.editor-controls {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 10;
+}
+
+.move-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.move-btn {
+    width: 24px;
+    height: 18px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.move-btn:hover:not(:disabled) {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
+.move-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.delete-set-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 1.25rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.delete-set-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: #ef4444;
+}
+
+.delete-confirm-inline {
+    display: flex;
+    gap: 4px;
+}
+
+.confirm-yes-sm,
+.confirm-no-sm {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-yes-sm {
+    background: #ef4444;
+    color: white;
+}
+
+.confirm-no-sm {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+/* Editable Header Overlay - Matches mini-editor-header styling from Instructions.css */
+.editable-header-overlay {
+    position: absolute;
+    top: 1.5rem;
+    left: 1.75rem;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-width: calc(100% - 8rem);
+}
+
+.editable-title-text,
+.editable-desc-text {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    padding: 0.125rem 0.25rem;
+    margin: -0.125rem -0.25rem;
+}
+
+/* Match mini-editor-title h2 from Instructions.css (font-size: 1.25rem) */
+.editable-title-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Match mini-editor-description from Instructions.css (font-size: 0.95rem) */
+.editable-desc-text {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.editable-title-text:hover,
+.editable-desc-text:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.title-input-overlay,
+.desc-input-overlay {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--accent-primary);
+    border-radius: 4px;
+    color: var(--text-primary);
+    padding: 0.125rem 0.25rem;
+}
+
+/* Match editable input sizes to the display text sizes */
+.title-input-overlay {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.desc-input-overlay {
+    font-size: 0.95rem;
+}
+
+/* Sidebar custom tabs section */
+.sidebar-custom-tabs {
+    padding: 0.5rem 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.sidebar-custom-tabs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-custom-tabs-header span {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    font-weight: 600;
+}
+
+.add-tab-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.add-tab-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.custom-tab-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    text-align: left;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.custom-tab-nav-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.custom-tab-nav-item.active {
+    background: linear-gradient(to right, var(--accent-glow), transparent);
+    color: var(--accent-primary);
+    border-left: 2px solid var(--accent-primary);
+    border-radius: 2px 6px 6px 2px;
+}
+
+.custom-tab-nav-item .tab-icon {
+    font-size: 1rem;
+}
+
+.custom-tab-nav-item .tab-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Import Modal */
+.import-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.import-modal {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.import-modal h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+}
+
+.import-modal textarea {
+    width: 100%;
+    height: 200px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    resize: vertical;
+}
+
+.import-modal textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.import-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.import-modal-actions button {
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.import-modal-actions .cancel-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.import-modal-actions .import-btn {
+    background: var(--accent-primary);
+    border: none;
+    color: white;
+}
+
+.import-modal-actions .import-btn:hover {
+    filter: brightness(1.1);
+}
