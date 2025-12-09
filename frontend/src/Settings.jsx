@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from './AuthContext';
+import { getPreferences, savePreferences } from './api';
+import AdminPanel from './AdminPanel';
 import './Settings.css';
 
 const Settings = () => {
     const [activeSection, setActiveSection] = useState('appearance');
+    const { isLoggedIn, isLoading: authLoading } = useAuth();
+    const [prefsLoaded, setPrefsLoaded] = useState(false);
+    const saveTimeoutRef = useRef(null);
 
     // Theme mode (light/dark) with localStorage persistence
     const [themeMode, setThemeMode] = useState(() => {
@@ -77,6 +83,63 @@ const Settings = () => {
         localStorage.setItem('accentBrightness', b.toString());
     };
 
+    // Load preferences from server when logged in
+    useEffect(() => {
+        const loadServerPrefs = async () => {
+            if (!isLoggedIn || authLoading) return;
+
+            try {
+                const prefs = await getPreferences();
+                if (prefs) {
+                    if (prefs.theme_mode) {
+                        setThemeMode(prefs.theme_mode);
+                        localStorage.setItem('themeMode', prefs.theme_mode);
+                    }
+                    if (prefs.accent_hue !== undefined && prefs.accent_hue !== null) {
+                        setHue(prefs.accent_hue);
+                    }
+                    if (prefs.accent_brightness !== undefined && prefs.accent_brightness !== null) {
+                        setBrightness(prefs.accent_brightness);
+                    }
+                }
+                setPrefsLoaded(true);
+            } catch (err) {
+                console.error('Failed to load preferences:', err);
+                setPrefsLoaded(true);
+            }
+        };
+        loadServerPrefs();
+    }, [isLoggedIn, authLoading]);
+
+    // Save preferences to server when changed (debounced)
+    useEffect(() => {
+        if (!isLoggedIn || !prefsLoaded) return;
+
+        // Clear any pending save
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Debounce save
+        saveTimeoutRef.current = setTimeout(async () => {
+            try {
+                await savePreferences({
+                    theme_mode: themeMode,
+                    accent_hue: hue,
+                    accent_brightness: brightness
+                });
+            } catch (err) {
+                console.error('Failed to save preferences:', err);
+            }
+        }, 1000);
+
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, [themeMode, hue, brightness, isLoggedIn, prefsLoaded]);
+
     // Apply theme mode to document
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', themeMode);
@@ -150,6 +213,9 @@ const Settings = () => {
 
                 <div className="settings-content">
                     {renderSection()}
+
+                    {/* Admin Panel - only visible to admins */}
+                    {isLoggedIn && <AdminPanel />}
                 </div>
             </div>
         </div>

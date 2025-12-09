@@ -45,21 +45,151 @@
     border-radius: 2px;
 }
 
+/* User Account Section */
+.sidebar-user-section {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.user-loading {
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    padding: 0.5rem;
+}
+
+.sidebar-sign-in-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sidebar-sign-in-btn:hover {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.sign-in-icon {
+    font-size: 0.95rem;
+}
+
+.user-info {
+    position: relative;
+}
+
+.user-info-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-info-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+.user-avatar {
+    font-size: 1rem;
+}
+
+.user-name {
+    flex: 1;
+    text-align: left;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdown-arrow {
+    font-size: 0.6rem;
+    color: var(--text-tertiary);
+}
+
+.sidebar-user-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    overflow: hidden;
+}
+
+.dropdown-username {
+    padding: 0.75rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.admin-badge {
+    background: var(--accent-primary);
+    color: white;
+    font-size: 0.6rem;
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.dropdown-signout {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem;
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+.dropdown-signout:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
 .sidebar-header {
-    padding: 2rem 1.5rem;
+    padding: 1.5rem;
     border-bottom: 1px solid var(--border-color);
     background: var(--glass-highlight);
 }
 
 .sidebar-header h2 {
     margin: 0;
-    font-size: 1.35rem;
+    font-size: 1.15rem;
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.02em;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
 }
 
 .sidebar-nav {
@@ -129,4 +259,22 @@
     font-size: 0.75rem;
     font-weight: 500;
     background: rgba(0, 0, 0, 0.05);
+}
+
+.unsaved-indicator {
+    font-size: 0.85rem;
+    cursor: help;
+    animation: gentlePulse 2s ease-in-out infinite;
+}
+
+@keyframes gentlePulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
 }

@@ -24,6 +24,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useConfirmedUnitsContext } from './ConfirmedUnitsContext';
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -937,26 +938,27 @@ export const useDisplayUnits = () => {
  * - User manually confirms via context menu or checkbox in modal
  * - User sets a display unit (which implicitly confirms they reviewed the unit)
  * 
- * Confirmation resets when equations text changes.
- */
-/**
- * Custom hook for managing unit confirmation state.
- * Units must be confirmed by the user to be considered "validated".
- * 
- * Confirmation happens when:
- * - Unit source is 'explicit' (defined in equation with [unit])
- * - User manually confirms via context menu or checkbox in modal
- * - User sets a display unit (which implicitly confirms they reviewed the unit)
- * 
  * Confirmation persists as long as the variable name and the unit string remain the same.
  * It does NOT reset automatically when equations change, unless the unit itself changes.
  * 
- * UPDATE: If a successful run occurs (results are present) and a variable is missing, key is pruned.
+ * NEW: Supports optional persistence via initialConfirmedUnits and onConfirmedUnitsChange.
+ * When logged in, confirmed units can be saved to the user's preferences on the server.
  */
-export const useConfirmedUnits = (results) => {
+export const useConfirmedUnits = (results, initialConfirmedUnits = {}, onConfirmedUnitsChange = null) => {
     // Store confirmed units as { variableName: "unitString" }
     // We confirm a specific UNIT string for a variable.
-    const [confirmedUnits, setConfirmedUnits] = useState({});
+    const [confirmedUnits, setConfirmedUnits] = useState(initialConfirmedUnits);
+
+    // Track if we've initialized from server data
+    const [initialized, setInitialized] = useState(false);
+
+    // Update from initial data when it changes (e.g., user logs in)
+    useEffect(() => {
+        if (Object.keys(initialConfirmedUnits).length > 0 && !initialized) {
+            setConfirmedUnits(prev => ({ ...initialConfirmedUnits, ...prev }));
+            setInitialized(true);
+        }
+    }, [initialConfirmedUnits, initialized]);
 
     // Prune confirmations for variables that no longer exist in successful results
     useEffect(() => {
@@ -976,7 +978,12 @@ export const useConfirmedUnits = (results) => {
         }
     }, [results]);
 
-    // No longer clearing on equation change to support persistence
+    // Notify parent when confirmed units change (for server persistence)
+    useEffect(() => {
+        if (onConfirmedUnitsChange && initialized) {
+            onConfirmedUnitsChange(confirmedUnits);
+        }
+    }, [confirmedUnits, onConfirmedUnitsChange, initialized]);
 
     const confirmUnit = (variable, unit) => {
         if (!variable || !unit) return;
@@ -1008,7 +1015,7 @@ export const useConfirmedUnits = (results) => {
         return confirmedUnits[variable] === currentUnit;
     };
 
-    return { confirmedUnits, confirmUnit, unconfirmUnit, isUnitConfirmed };
+    return { confirmedUnits, confirmUnit, unconfirmUnit, isUnitConfirmed, setConfirmedUnits };
 };
 
 /**
@@ -1069,7 +1076,17 @@ export const useEquationEditorState = (initialEquations, onValueChange = null) =
     const { contextMenu, contextMenuRef, openContextMenu, closeContextMenu } = useContextMenu();
     const { keyVariables, toggleKeyVariable } = useKeyVariables();
     const { displayUnits, setDisplayUnit, resetDisplayUnit } = useDisplayUnits();
-    const { confirmedUnits, confirmUnit, unconfirmUnit, isUnitConfirmed } = useConfirmedUnits(results);
+
+    // Use global confirmed units context for persistence
+    const globalConfirmedUnits = useConfirmedUnitsContext();
+    const { confirmedUnits, confirmUnit, unconfirmUnit, isUnitConfirmed, pruneConfirmations } = globalConfirmedUnits;
+
+    // Prune confirmations when results change (remove variables that no longer exist)
+    useEffect(() => {
+        if (results && typeof results === 'object' && pruneConfirmations) {
+            pruneConfirmations(Object.keys(results));
+        }
+    }, [results, pruneConfirmations]);
 
     // Wire up modal confirm to updated persistence logic
     const { unitModal, openUnitModal, handleConfirm: handleUnitModalConfirm, handleCancel: handleUnitModalCancel } = useUnitModal(results, displayUnits, (variable, newUnit, originalUnit, shouldConfirm) => {
@@ -1600,6 +1617,16 @@ export const MiniEquationEditor = ({
                             <option value="deg">Deg</option>
                             <option value="rad">Rad</option>
                         </select>
+                        <select
+                            className="unit-selector"
+                            value={state.arrayMode}
+                            onChange={(e) => state.setArrayMode(e.target.value)}
+                            disabled={state.isRunning}
+                            title="Array combination mode"
+                        >
+                            <option value="parallel">Parallel</option>
+                            <option value="grid">Grid</option>
+                        </select>
                         <button
                             className="mini-run-button"
                             onClick={state.handleRun}
@@ -1623,6 +1650,16 @@ export const MiniEquationEditor = ({
                         >
                             <option value="deg">Deg</option>
                             <option value="rad">Rad</option>
+                        </select>
+                        <select
+                            className="unit-selector"
+                            value={state.arrayMode}
+                            onChange={(e) => state.setArrayMode(e.target.value)}
+                            disabled={state.isRunning}
+                            title="Array combination mode"
+                        >
+                            <option value="parallel">Parallel</option>
+                            <option value="grid">Grid</option>
                         </select>
                         <button
                             className="mini-run-button"

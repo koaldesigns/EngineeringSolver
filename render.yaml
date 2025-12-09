@@ -9,6 +9,16 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: engineering-solver-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        sync: false  # Set manually in Render dashboard
+      - key: ADMIN_PASSWORD
+        sync: false  # Set manually in Render dashboard
     healthCheckPath: /health
 
   # Frontend Static Site
@@ -32,3 +42,8 @@ services:
           name: engineering-solver-api
           type: web
           property: host
+
+databases:
+  - name: engineering-solver-db
+    plan: free
+    databaseName: ees_db

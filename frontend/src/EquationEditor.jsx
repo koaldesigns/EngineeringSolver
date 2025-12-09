@@ -148,7 +148,12 @@ const EquationEditor = ({ initialValue, onValueChange }) => {
         <div className="editor-container">
             <div className="editor-header">
                 <h1>Equation Editor</h1>
-                <div className="editor-actions">
+                <p className="editor-header-subtitle">Enter equations to solve and visualize</p>
+            </div>
+
+            <div className="editor-main">
+                {/* Controls Row */}
+                <div className="equation-editor-controls">
                     <select
                         className="unit-selector"
                         value={state.angleUnit}
@@ -177,9 +182,7 @@ const EquationEditor = ({ initialValue, onValueChange }) => {
                         {state.isRunning ? 'Running...' : 'Run Equations'}
                     </button>
                 </div>
-            </div>
 
-            <div className="editor-main">
                 <div className="input-section">
                     <textarea
                         className="equation-input"

@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import LoginModal from './LoginModal';
 import './Sidebar.css';
 import './CustomTabs.css';
 
@@ -6,7 +8,12 @@ const Sidebar = ({ activeTab, setActiveTab, customTabs = [], onAddTab, onImportT
     const [showImportModal, setShowImportModal] = useState(false);
     const [importData, setImportData] = useState('');
     const [importError, setImportError] = useState('');
+    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showUserDropdown, setShowUserDropdown] = useState(false);
     const fileInputRef = useRef(null);
+    const dropdownRef = useRef(null);
+
+    const { user, isLoggedIn, isLoading, isAdmin, logout } = useAuth();
 
     const builtInTabs = [
         { id: 'editor', label: 'Equation Editor', icon: '📝' },
@@ -58,11 +65,65 @@ const Sidebar = ({ activeTab, setActiveTab, customTabs = [], onAddTab, onImportT
         }
     };
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowUserDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleLogout = async () => {
+        setShowUserDropdown(false);
+        await logout();
+    };
+
     return (
         <div className="sidebar">
             <div className="sidebar-header">
-                <h2>EES</h2>
+                <h2>Engineering Solver</h2>
             </div>
+
+            {/* User Account Section */}
+            <div className="sidebar-user-section">
+                {isLoading ? (
+                    <div className="user-loading">...</div>
+                ) : isLoggedIn ? (
+                    <div className="user-info" ref={dropdownRef}>
+                        <button
+                            className="user-info-btn"
+                            onClick={() => setShowUserDropdown(!showUserDropdown)}
+                        >
+                            <span className="user-avatar">{isAdmin ? '👑' : '👤'}</span>
+                            <span className="user-name">{user?.username}</span>
+                            <span className="dropdown-arrow">▼</span>
+                        </button>
+                        {showUserDropdown && (
+                            <div className="sidebar-user-dropdown">
+                                <div className="dropdown-username">
+                                    {user?.username}
+                                    {isAdmin && <span className="admin-badge">Admin</span>}
+                                </div>
+                                <button className="dropdown-signout" onClick={handleLogout}>
+                                    🚪 Sign Out
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <button
+                        className="sidebar-sign-in-btn"
+                        onClick={() => setShowLoginModal(true)}
+                    >
+                        <span className="sign-in-icon">🔐</span>
+                        <span>Sign In</span>
+                    </button>
+                )}
+            </div>
+
             <nav className="sidebar-nav">
                 {/* Built-in tabs */}
                 {builtInTabs.map((tab) => (
@@ -81,6 +142,14 @@ const Sidebar = ({ activeTab, setActiveTab, customTabs = [], onAddTab, onImportT
                     <div className="sidebar-custom-tabs">
                         <div className="sidebar-custom-tabs-header">
                             <span>My Equation Sets</span>
+                            {!isLoggedIn && customTabs.length > 0 && (
+                                <span
+                                    className="unsaved-indicator"
+                                    title="Sign in to save your equation sets"
+                                >
+                                    ⚠️
+                                </span>
+                            )}
                             <div style={{ display: 'flex', gap: '4px' }}>
                                 <button
                                     className="add-tab-btn"
@@ -114,6 +183,12 @@ const Sidebar = ({ activeTab, setActiveTab, customTabs = [], onAddTab, onImportT
             <div className="sidebar-footer">
                 <p>v0.1.0</p>
             </div>
+
+            {/* Login Modal */}
+            <LoginModal
+                isOpen={showLoginModal}
+                onClose={() => setShowLoginModal(false)}
+            />
 
             {/* Import Modal */}
             {showImportModal && (

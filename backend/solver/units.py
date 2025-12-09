@@ -13,7 +13,7 @@ class UnitRegistry:
     """
     def __init__(self):
         self.ureg = pint.UnitRegistry()
-        self.ureg.default_format = '~'
+        self.ureg.formatter.default_format = '~'  # Use abbreviated unit names
         self._raw_Q = self.ureg.Quantity
         self._define_safe_aliases()
         

@@ -7,3 +7,7 @@ CoolProp
 sympy
 pydantic
 plotly
+sqlalchemy
+psycopg2-binary
+bcrypt
+python-jose[cryptography]
