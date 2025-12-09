@@ -28,8 +28,20 @@
 .instructions-header {
     padding: 2.5rem 2rem;
     border-bottom: 1px solid var(--border-color);
-    background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    background: var(--gradient-header, linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%));
     text-align: center;
+    position: relative;
+}
+
+/* Subtle bottom highlight */
+.instructions-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
 }
 
 .instructions-header h1 {
@@ -68,17 +80,19 @@
 
 .mini-editor-card:hover {
     border-color: var(--border-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1));
 }
 
-/* Mini Editor Header - neutral grey, no orange tinge */
+/* Mini Editor Header - glass effect */
 .mini-editor-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem 1.75rem;
-    background: var(--bg-tertiary);
+    background: var(--glass-bg, var(--bg-tertiary));
+    backdrop-filter: var(--glass-blur, blur(12px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(12px));
     border-bottom: 1px solid var(--border-color);
     border-radius: 12px 12px 0 0;
     gap: 1rem;
@@ -183,9 +197,11 @@
     box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* Mini Output Section - neutral grey background */
+/* Mini Output Section - glass effect */
 .mini-output-section {
-    background-color: var(--bg-tertiary);
+    background: var(--glass-bg, var(--bg-tertiary));
+    backdrop-filter: var(--glass-blur, blur(12px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(12px));
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 1.25rem;
@@ -830,7 +846,7 @@
 }
 
 .array-results-table td.index-cell {
-    background: rgba(0, 0, 0, 0.1);
+    background: var(--table-index-bg, rgba(0, 0, 0, 0.1));
     color: var(--text-tertiary);
     font-weight: 500;
 }
@@ -844,11 +860,11 @@
 }
 
 .array-results-table tbody tr:nth-child(even) {
-    background: rgba(0, 0, 0, 0.05);
+    background: var(--table-row-alt, rgba(0, 0, 0, 0.05));
 }
 
 .array-results-table tbody tr:hover {
-    background: rgba(var(--accent-color-rgb, 0, 212, 255), 0.08);
+    background: var(--table-row-hover, rgba(0, 0, 0, 0.08));
 }
 
 /* Scrollbar styling for the table wrapper */
@@ -868,4 +884,41 @@
 
 .array-table-wrapper::-webkit-scrollbar-thumb:hover {
     background: var(--text-tertiary);
+}
+
+/* ========================================= */
+/* LIGHT MODE OVERRIDES - Mini Editors       */
+/* ========================================= */
+:root[data-theme="light"] .mini-unit-badge {
+    background-color: hsla(var(--unit-hue), 60%, 95%, 0.9);
+    color: hsl(var(--unit-hue), 70%, 35%);
+    border: 1px solid hsla(var(--unit-hue), 50%, 70%, 0.5);
+}
+
+:root[data-theme="light"] .array-results-table th {
+    background: #ffffff;
+    border-bottom-color: #d4d4d8;
+}
+
+:root[data-theme="light"] .array-results-table th.index-column {
+    background: #f9fafb;
+}
+
+:root[data-theme="light"] .array-table-header {
+    background: var(--bg-secondary);
+}
+
+:root[data-theme="light"] .array-table-container {
+    background: #ffffff;
+    border-color: #e4e4e7;
+}
+
+:root[data-theme="light"] .mini-result-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #e4e4e7;
+}
+
+:root[data-theme="light"] .mini-editor-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #e4e4e7;
 }

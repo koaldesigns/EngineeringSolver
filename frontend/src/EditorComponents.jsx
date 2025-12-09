@@ -28,7 +28,7 @@ import { createPortal } from 'react-dom';
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-import { solveEquations } from './api';
+import { solveEquations, convertUnitViaBackend } from './api';
 
 
 
@@ -202,14 +202,133 @@ export const UNIT_CONVERSIONS = {
 };
 
 /**
- * Convert a value from one unit to another
+ * Conversion cache for backend-fetched conversion factors.
+ * Keys are `${fromUnit}->${toUnit}`, values are:
+ *   - Success: { factor, displayUnit, timestamp, failed: false }
+ *   - Failure: { failed: true, error, timestamp }
+ * This cache persists across re-renders and is shared globally.
  */
-export const convertUnit = (value, fromUnit, toUnit) => {
+const conversionCache = new Map();
+
+/**
+ * Get a cached conversion if available.
+ * @param {string} fromUnit - Source unit
+ * @param {string} toUnit - Target unit
+ * @returns {object|null} - { factor, displayUnit, failed, error } if cached, null otherwise
+ */
+export const getCachedConversion = (fromUnit, toUnit) => {
+    const key = `${fromUnit}->${toUnit}`;
+    const cached = conversionCache.get(key);
+    if (cached) {
+        // Cache entries expire after 1 hour (optional, can be removed for permanent cache)
+        if (Date.now() - cached.timestamp < 3600000) {
+            return cached;
+        }
+        conversionCache.delete(key);
+    }
+    return null;
+};
+
+/**
+ * Store a successful conversion factor in the cache.
+ * @param {string} fromUnit - Source unit  
+ * @param {string} toUnit - Target unit
+ * @param {number} factor - Conversion factor
+ * @param {string} displayUnit - Formatted display unit from backend
+ */
+export const setCachedConversion = (fromUnit, toUnit, factor, displayUnit) => {
+    const key = `${fromUnit}->${toUnit}`;
+    conversionCache.set(key, { factor, displayUnit, timestamp: Date.now(), failed: false });
+};
+
+/**
+ * Store a failed conversion in the cache (incompatible dimensions).
+ * @param {string} fromUnit - Source unit  
+ * @param {string} toUnit - Target unit
+ * @param {string} error - Error message from backend
+ */
+export const setCachedFailure = (fromUnit, toUnit, error) => {
+    const key = `${fromUnit}->${toUnit}`;
+    conversionCache.set(key, { failed: true, error, timestamp: Date.now() });
+};
+
+/**
+ * Normalize a unit string for comparison and caching.
+ * Converts Unicode superscripts to caret notation.
+ */
+const normalizeUnit = (u) => {
+    if (!u) return '';
+    return u.replace(/\s+/g, '')
+        .replace(/²/g, '^2')
+        .replace(/³/g, '^3')
+        .replace(/⁰/g, '^0')
+        .replace(/¹/g, '^1')
+        .replace(/⁴/g, '^4')
+        .replace(/⁵/g, '^5')
+        .replace(/⁶/g, '^6')
+        .replace(/⁷/g, '^7')
+        .replace(/⁸/g, '^8')
+        .replace(/⁹/g, '^9')
+        .replace(/⁻/g, '-');
+};
+
+/**
+ * Pre-fetch a unit conversion from the backend and cache it.
+ * This should be called when a user sets a display unit.
+ * Caches both successful conversions and failures for faster subsequent lookups.
+ * @param {number} value - A sample value to convert (used to get factor)
+ * @param {string} fromUnit - Source unit
+ * @param {string} toUnit - Target unit
+ * @param {function} onComplete - Callback when conversion is complete (triggers re-render)
+ * @returns {Promise<{success: boolean, factor?: number, displayUnit?: string, error?: string, failed?: boolean}>}
+ */
+export const prefetchConversion = async (value, fromUnit, toUnit, onComplete = null) => {
+    // Normalize units for consistent caching
+    const from = normalizeUnit(fromUnit);
+    const to = normalizeUnit(toUnit);
+
+    // Check cache first (includes both successful and failed conversions)
+    const cached = getCachedConversion(from, to);
+    if (cached) {
+        if (onComplete) onComplete();
+        if (cached.failed) {
+            return { success: false, failed: true, error: cached.error };
+        }
+        return { success: true, factor: cached.factor, displayUnit: cached.displayUnit };
+    }
+
+    // Try local conversion first
+    const localResult = convertUnitLocal(value, fromUnit, toUnit);
+    if (localResult.success) {
+        const factor = value !== 0 ? localResult.value / value : 1;
+        setCachedConversion(from, to, factor, toUnit);
+        if (onComplete) onComplete();
+        return { success: true, factor, displayUnit: toUnit };
+    }
+
+    // Fall back to backend - send normalized units
+    const backendResult = await convertUnitViaBackend(value, from, to);
+    if (backendResult.success) {
+        setCachedConversion(from, to, backendResult.factor, backendResult.unit || toUnit);
+        if (onComplete) onComplete();
+        return { success: true, factor: backendResult.factor, displayUnit: backendResult.unit || toUnit };
+    }
+
+    // Cache the failure so we don't keep trying
+    setCachedFailure(from, to, backendResult.error || 'Incompatible units');
+    if (onComplete) onComplete();
+    return { success: false, failed: true, error: backendResult.error };
+};
+
+/**
+ * Convert a value using only local (synchronous) lookup table.
+ */
+const convertUnitLocal = (value, fromUnit, toUnit) => {
     if (!fromUnit || !toUnit || fromUnit === toUnit) {
         return { value, unit: toUnit || fromUnit, success: true };
     }
 
-    const normalizeUnit = (u) => u.replace(/\s+/g, '').replace(/²/g, '^2').replace(/³/g, '^3');
+    // Use the shared normalizeUnit function
     const from = normalizeUnit(fromUnit);
     const to = normalizeUnit(toUnit);
 
@@ -229,21 +348,153 @@ export const convertUnit = (value, fromUnit, toUnit) => {
 };
 
 /**
- * Get suggested units for a given unit (for quick select in modal)
+ * Convert a value from one unit to another.
+ * First tries local lookup, then checks cache for backend conversions.
+ * If conversion is not available, returns failure (caller should prefetch first).
+ */
+export const convertUnit = (value, fromUnit, toUnit) => {
+    if (!fromUnit || !toUnit || fromUnit === toUnit) {
+        return { value, unit: toUnit || fromUnit, success: true };
+    }
+
+    // Use the shared normalizeUnit function
+    const from = normalizeUnit(fromUnit);
+    const to = normalizeUnit(toUnit);
+
+    if (from === to) {
+        return { value, unit: toUnit, success: true };
+    }
+
+    // Try local lookup first
+    if (UNIT_CONVERSIONS[from] && UNIT_CONVERSIONS[from][to] !== undefined) {
+        return { value: value * UNIT_CONVERSIONS[from][to], unit: toUnit, success: true };
+    }
+
+    if (UNIT_CONVERSIONS[to] && UNIT_CONVERSIONS[to][from] !== undefined) {
+        return { value: value / UNIT_CONVERSIONS[to][from], unit: toUnit, success: true };
+    }
+
+    // Check cache for backend conversions (includes both success and failure)
+    const cached = getCachedConversion(from, to);
+    if (cached) {
+        if (cached.failed) {
+            // Cached failure - this is a real dimension mismatch
+            return { value, unit: fromUnit, success: false, failed: true, error: cached.error };
+        }
+        return { value: value * cached.factor, unit: cached.displayUnit || toUnit, success: true };
+    }
+
+    // Also check reverse direction in cache
+    const cachedReverse = getCachedConversion(to, from);
+    if (cachedReverse) {
+        if (cachedReverse.failed) {
+            return { value, unit: fromUnit, success: false, failed: true, error: cachedReverse.error };
+        }
+        return { value: value / cachedReverse.factor, unit: toUnit, success: true };
+    }
+
+    // Conversion not in cache yet - prefetch is in progress
+    // Return needsPrefetch: true so caller knows this is NOT a confirmed mismatch
+    return { value, unit: fromUnit, success: false, needsPrefetch: true };
+};
+
+/**
+ * Compound unit suggestions by dimension family.
+ * Each key is a pattern that matches units of that type.
+ * Values are common alternative units in SI and Imperial.
+ */
+const COMPOUND_UNIT_SUGGESTIONS = {
+    // Velocity: m/s, km/h, ft/s, mph, etc.
+    velocity: {
+        patterns: ['m/s', 'm/sec', 'km/h', 'km/hr', 'ft/s', 'ft/sec', 'mph', 'mi/h', 'in/s', 'cm/s'],
+        suggestions: ['m/s', 'km/h', 'ft/s', 'mph', 'in/s']
+    },
+    // Density: kg/m^3, g/cm^3, lb/ft^3, etc.
+    density: {
+        patterns: ['kg/m^3', 'kg/m³', 'g/cm^3', 'g/cm³', 'g/mL', 'lb/ft^3', 'lb/ft³', 'lbm/ft^3', 'slug/ft^3'],
+        suggestions: ['kg/m^3', 'g/cm^3', 'lbm/ft^3', 'g/mL']
+    },
+    // Mass flow: kg/s, lb/s, g/min, etc.
+    massFlow: {
+        patterns: ['kg/s', 'kg/min', 'kg/h', 'kg/hr', 'g/s', 'g/min', 'lb/s', 'lbm/s', 'lb/min', 'lb/h', 'lb/hr'],
+        suggestions: ['kg/s', 'kg/h', 'lbm/s', 'g/min']
+    },
+    // Volume flow: m^3/s, L/min, gal/min, etc.
+    volumeFlow: {
+        patterns: ['m^3/s', 'm³/s', 'L/s', 'L/min', 'mL/s', 'ft^3/s', 'ft³/s', 'gal/min', 'gpm', 'cfm'],
+        suggestions: ['m^3/s', 'L/min', 'gal/min', 'ft^3/s']
+    },
+    // Specific heat: J/(kg·K), kJ/(kg·K), BTU/(lb·R), etc.
+    specificHeat: {
+        patterns: ['J/(kg*K)', 'J/(kg·K)', 'kJ/(kg*K)', 'kJ/(kg·K)', 'BTU/(lb*R)', 'BTU/(lbm*R)', 'cal/(g*K)'],
+        suggestions: ['J/(kg*K)', 'kJ/(kg*K)', 'BTU/(lbm*R)']
+    },
+    // Thermal conductivity: W/(m·K), BTU/(h·ft·R), etc.
+    thermalConductivity: {
+        patterns: ['W/(m*K)', 'W/(m·K)', 'W/m/K', 'BTU/(h*ft*R)', 'BTU/(hr*ft*R)'],
+        suggestions: ['W/(m*K)', 'BTU/(hr*ft*R)']
+    },
+    // Dynamic viscosity: Pa·s, kg/(m·s), lb/(ft·s), etc.
+    dynamicViscosity: {
+        patterns: ['Pa*s', 'Pa·s', 'kg/(m*s)', 'N*s/m^2', 'lb/(ft*s)', 'lbf*s/ft^2', 'poise', 'cP', 'centipoise'],
+        suggestions: ['Pa*s', 'cP', 'lb/(ft*s)']
+    },
+    // Kinematic viscosity: m^2/s, ft^2/s, etc.
+    kinematicViscosity: {
+        patterns: ['m^2/s', 'm²/s', 'ft^2/s', 'ft²/s', 'stokes', 'cSt', 'centistokes'],
+        suggestions: ['m^2/s', 'cSt', 'ft^2/s']
+    },
+    // Pressure (already in lookup but add variations)
+    pressure: {
+        patterns: ['N/m^2', 'N/m²', 'kN/m^2', 'lbf/in^2', 'lbf/ft^2'],
+        suggestions: ['Pa', 'kPa', 'bar', 'psi', 'atm']
+    },
+    // Energy per volume: J/m^3, etc.
+    energyDensity: {
+        patterns: ['J/m^3', 'J/m³', 'kJ/m^3', 'BTU/ft^3'],
+        suggestions: ['J/m^3', 'kJ/m^3', 'BTU/ft^3']
+    },
+    // Acceleration: m/s^2, ft/s^2, g, etc.
+    acceleration: {
+        patterns: ['m/s^2', 'm/s²', 'ft/s^2', 'ft/s²', 'in/s^2', 'cm/s^2'],
+        suggestions: ['m/s^2', 'ft/s^2', 'in/s^2']
+    }
+};
+
+/**
+ * Get suggested units for a given unit (for quick select in modal).
+ * Includes both simple unit conversions from lookup table and 
+ * compound unit suggestions based on dimension families.
  */
 export const getSuggestedUnits = (currentUnit) => {
     if (!currentUnit) return [];
-    const normalizedUnit = currentUnit.replace(/\s+/g, '').replace(/²/g, '^2').replace(/³/g, '^3');
-    const suggestions = UNIT_CONVERSIONS[normalizedUnit];
+    const normalized = normalizeUnit(currentUnit);
+
+    // First try exact match in local conversion table
+    const suggestions = UNIT_CONVERSIONS[normalized];
     if (suggestions) {
         return Object.keys(suggestions);
     }
+
     // Check if this unit is a target of any conversion
     for (const [baseUnit, targets] of Object.entries(UNIT_CONVERSIONS)) {
-        if (targets[normalizedUnit] !== undefined) {
-            return [baseUnit, ...Object.keys(targets).filter(u => u !== normalizedUnit)];
+        if (targets[normalized] !== undefined) {
+            return [baseUnit, ...Object.keys(targets).filter(u => u !== normalized)];
         }
     }
+
+    // Try compound unit suggestions based on pattern matching
+    for (const [, config] of Object.entries(COMPOUND_UNIT_SUGGESTIONS)) {
+        const matches = config.patterns.some(pattern => {
+            const normalizedPattern = normalizeUnit(pattern);
+            return normalized === normalizedPattern;
+        });
+        if (matches) {
+            // Return suggestions excluding the current unit
+            return config.suggestions.filter(u => normalizeUnit(u) !== normalized);
+        }
+    }
+
     return [];
 };
 
@@ -253,7 +504,8 @@ export const getSuggestedUnits = (currentUnit) => {
 
 /**
  * Unit Input Modal Component
- * Used for changing display units on result cards
+ * Used for changing display units on result cards.
+ * Fetches compatible unit suggestions from backend via dimensional analysis.
  * 
  * Props:
  * - unitSource: Optional 'explicit', 'propagated', or 'inferred' - if propagated/inferred, shows confirm checkbox
@@ -262,8 +514,9 @@ export const getSuggestedUnits = (currentUnit) => {
 export const UnitInputModal = ({ isOpen, variable, currentUnit, originalUnit, unitSource, onConfirm, onCancel }) => {
     const [inputValue, setInputValue] = useState('');
     const [confirmChecked, setConfirmChecked] = useState(false);
+    const [suggestedUnits, setSuggestedUnits] = useState([]);
+    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const inputRef = useRef(null);
-    const suggestedUnits = getSuggestedUnits(originalUnit);
 
     // Show confirm checkbox for non-explicit units
     const showConfirmCheckbox = unitSource && unitSource !== 'explicit';
@@ -272,6 +525,35 @@ export const UnitInputModal = ({ isOpen, variable, currentUnit, originalUnit, un
         if (isOpen) {
             setInputValue(currentUnit || '');
             setConfirmChecked(false);  // Reset checkbox each time modal opens
+
+            // Fetch suggestions from backend
+            const fetchSuggestions = async () => {
+                if (!originalUnit) {
+                    setSuggestedUnits([]);
+                    return;
+                }
+
+                setIsLoadingSuggestions(true);
+                try {
+                    // Import dynamically to avoid circular dependencies
+                    const { getUnitSuggestions } = await import('./api');
+                    const result = await getUnitSuggestions(originalUnit);
+                    if (result.success && result.suggestions) {
+                        setSuggestedUnits(result.suggestions);
+                    } else {
+                        // Fallback to local suggestions
+                        setSuggestedUnits(getSuggestedUnits(originalUnit));
+                    }
+                } catch (error) {
+                    // Fallback to local suggestions
+                    setSuggestedUnits(getSuggestedUnits(originalUnit));
+                } finally {
+                    setIsLoadingSuggestions(false);
+                }
+            };
+
+            fetchSuggestions();
+
             setTimeout(() => {
                 if (inputRef.current) {
                     inputRef.current.focus();
@@ -279,7 +561,7 @@ export const UnitInputModal = ({ isOpen, variable, currentUnit, originalUnit, un
                 }
             }, 50);
         }
-    }, [isOpen, currentUnit]);
+    }, [isOpen, currentUnit, originalUnit]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -469,18 +751,28 @@ export const ResultCard = ({
 
         const converted = convertUnit(originalData.value, originalData.unit, targetUnit);
         let warning = null;
+        let isPending = false;
 
-        // Check for mismatches
+        // Check for mismatches - but only show warning for confirmed failures
         if (!originalData.unit && targetUnit) {
+            // Trying to apply unit to dimensionless result
             warning = `Mismatch: Calculated (Dimensionless) vs Display (${targetUnit})`;
         } else if (!converted.success) {
-            warning = `Mismatch: Calculated (${originalData.unit}) vs Display (${targetUnit})`;
+            if (converted.failed) {
+                // Confirmed failure from cache - this is a real dimension mismatch
+                warning = `Mismatch: Calculated (${originalData.unit}) vs Display (${targetUnit})`;
+            } else if (converted.needsPrefetch) {
+                // Conversion is pending - don't show warning yet
+                // The prefetch will complete and trigger a re-render
+                isPending = true;
+            }
         }
 
         return {
-            value: converted.value,
-            unit: targetUnit,
-            warning
+            value: converted.success ? converted.value : originalData.value,
+            unit: converted.success ? converted.unit : targetUnit,
+            warning,
+            isPending
         };
     };
 
@@ -583,12 +875,23 @@ export const useKeyVariables = () => {
 };
 
 /**
- * Custom hook for managing display unit overrides
+ * Custom hook for managing display unit overrides with backend prefetch support.
+ * When a display unit is set, it triggers a prefetch to cache the conversion factor.
  */
 export const useDisplayUnits = () => {
     const [displayUnits, setDisplayUnits] = useState({});
+    // Counter to trigger re-renders when conversions complete
+    const [conversionReady, setConversionReady] = useState(0);
 
-    const setDisplayUnit = (variable, newUnit, originalUnit) => {
+    /**
+     * Set a display unit for a variable.
+     * Triggers async prefetch of conversion factor if needed.
+     * @param {string} variable - The variable name
+     * @param {string} newUnit - The new display unit
+     * @param {string} originalUnit - The original calculated unit
+     * @param {number} sampleValue - Optional sample value to use for prefetch (default 1)
+     */
+    const setDisplayUnit = (variable, newUnit, originalUnit, sampleValue = 1) => {
         if (newUnit === '' || newUnit === originalUnit) {
             // Clear override
             setDisplayUnits(prev => {
@@ -597,10 +900,20 @@ export const useDisplayUnits = () => {
                 return next;
             });
         } else {
+            // Set the display unit immediately
             setDisplayUnits(prev => ({
                 ...prev,
                 [variable]: newUnit
             }));
+
+            // Prefetch the conversion factor from backend if needed
+            // This will cache the factor for instant use on subsequent renders
+            if (originalUnit && newUnit !== originalUnit) {
+                prefetchConversion(sampleValue, originalUnit, newUnit, () => {
+                    // Trigger a re-render when conversion is ready
+                    setConversionReady(prev => prev + 1);
+                });
+            }
         }
     };
 
@@ -612,7 +925,7 @@ export const useDisplayUnits = () => {
         });
     };
 
-    return { displayUnits, setDisplayUnit, resetDisplayUnit };
+    return { displayUnits, setDisplayUnit, resetDisplayUnit, conversionReady };
 };
 
 /**
@@ -1117,6 +1430,49 @@ const MiniPlotPanel = ({ plots }) => {
         setExpandedPlot(expandedPlot === idx ? null : idx);
     };
 
+    // Detect current theme and create deep merge function for proper axis title preservation
+    const isDarkMode = document.documentElement.getAttribute('data-theme') !== 'light';
+
+    const mergeLayouts = (baseLayout, isDark) => {
+        const colors = isDark ? {
+            paper: 'rgba(30, 30, 30, 0.95)', plot: 'rgba(30, 30, 30, 0.95)',
+            text: '#e4e4e7', grid: 'rgba(255,255,255,0.1)', zero: 'rgba(255,255,255,0.2)',
+            tick: '#a1a1aa', legendBg: 'rgba(45, 45, 48, 0.9)'
+        } : {
+            paper: 'rgba(255, 255, 255, 0.98)', plot: 'rgba(255, 255, 255, 0.98)',
+            text: '#000000', grid: 'rgba(0,0,0,0.1)', zero: 'rgba(0,0,0,0.2)',
+            tick: '#18181b', legendBg: 'rgba(255, 255, 255, 0.95)'
+        };
+        const result = { ...baseLayout };
+        result.paper_bgcolor = colors.paper;
+        result.plot_bgcolor = colors.plot;
+        result.font = { ...(baseLayout.font || {}), color: colors.text, size: 12 };
+        if (baseLayout.title) {
+            const titleText = typeof baseLayout.title === 'string' ? baseLayout.title : baseLayout.title?.text;
+            result.title = { text: titleText, font: { color: colors.text, size: 14 } };
+        }
+        result.legend = { ...(baseLayout.legend || {}), bgcolor: colors.legendBg, font: { color: colors.text } };
+        if (baseLayout.xaxis) {
+            const xTitle = typeof baseLayout.xaxis.title === 'string' ? baseLayout.xaxis.title : baseLayout.xaxis.title?.text;
+            result.xaxis = {
+                ...baseLayout.xaxis, gridcolor: colors.grid, zerolinecolor: colors.zero,
+                tickfont: { ...(baseLayout.xaxis.tickfont || {}), color: colors.tick },
+                title: xTitle ? { text: xTitle, font: { color: colors.text } } : undefined
+            };
+        }
+        if (baseLayout.yaxis) {
+            const yTitle = typeof baseLayout.yaxis.title === 'string' ? baseLayout.yaxis.title : baseLayout.yaxis.title?.text;
+            result.yaxis = {
+                ...baseLayout.yaxis, gridcolor: colors.grid, zerolinecolor: colors.zero,
+                tickfont: { ...(baseLayout.yaxis.tickfont || {}), color: colors.tick },
+                title: yTitle ? { text: yTitle, font: { color: colors.text } } : undefined
+            };
+        }
+        result.autosize = true;
+        result.margin = { t: 70, r: 20, b: 70, l: 60 };
+        return result;
+    };
+
     // Render the actual plots using Plotly
     return (
         <div className="mini-plot-panel">
@@ -1133,12 +1489,7 @@ const MiniPlotPanel = ({ plots }) => {
                     >
                         <Plot
                             data={config.data}
-                            layout={{
-                                ...config.layout,
-                                autosize: true,
-                                // Smaller margins for mini editor
-                                margin: { t: 70, r: 20, b: 70, l: 60 },
-                            }}
+                            layout={mergeLayouts(config.layout, isDarkMode)}
                             config={{
                                 responsive: true,
                                 displayModeBar: true,

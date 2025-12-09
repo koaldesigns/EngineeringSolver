@@ -4,9 +4,21 @@ import './Settings.css';
 const Settings = () => {
     const [activeSection, setActiveSection] = useState('appearance');
 
-    // Default values matching CSS or a sensible default
-    const [hue, setHue] = useState(25); // Corresponds roughly to #ea580c orange
-    const [brightness, setBrightness] = useState(50);
+    // Theme mode (light/dark) with localStorage persistence
+    const [themeMode, setThemeMode] = useState(() => {
+        const saved = localStorage.getItem('themeMode');
+        return saved || 'dark';
+    });
+
+    // Accent color customization
+    const [hue, setHue] = useState(() => {
+        const saved = localStorage.getItem('accentHue');
+        return saved ? Number(saved) : 25;
+    });
+    const [brightness, setBrightness] = useState(() => {
+        const saved = localStorage.getItem('accentBrightness');
+        return saved ? Number(saved) : 40;  // Burnt orange #CC5500
+    });
 
     const sections = [
         { id: 'appearance', title: 'Appearance', icon: '🎨' },
@@ -53,11 +65,23 @@ const Settings = () => {
         // Glow (rgba)
         const [r, g, br] = hslToRgbValues(h, s, b);
         const glow = `rgba(${r}, ${g}, ${br}, 0.15)`;
+        const subtle = `rgba(${r}, ${g}, ${br}, 0.08)`;
 
         document.documentElement.style.setProperty('--accent-primary', hex);
         document.documentElement.style.setProperty('--accent-hover', hoverHex);
         document.documentElement.style.setProperty('--accent-glow', glow);
+        document.documentElement.style.setProperty('--accent-subtle', subtle);
+
+        // Persist to localStorage
+        localStorage.setItem('accentHue', h.toString());
+        localStorage.setItem('accentBrightness', b.toString());
     };
+
+    // Apply theme mode to document
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', themeMode);
+        localStorage.setItem('themeMode', themeMode);
+    }, [themeMode]);
 
     useEffect(() => {
         updateAccentColor(hue, brightness);
@@ -73,6 +97,8 @@ const Settings = () => {
             case 'appearance':
                 return (
                     <AppearanceSection
+                        themeMode={themeMode}
+                        setThemeMode={setThemeMode}
                         hue={hue}
                         setHue={setHue}
                         brightness={brightness}
@@ -89,6 +115,8 @@ const Settings = () => {
             default:
                 return (
                     <AppearanceSection
+                        themeMode={themeMode}
+                        setThemeMode={setThemeMode}
                         hue={hue}
                         setHue={setHue}
                         brightness={brightness}
@@ -132,16 +160,40 @@ const Settings = () => {
 // SECTION COMPONENTS
 // ============================================================================
 
-const AppearanceSection = ({ hue, setHue, brightness, setBrightness, handleReset }) => (
+const AppearanceSection = ({ themeMode, setThemeMode, hue, setHue, brightness, setBrightness, handleReset }) => (
     <div className="settings-section-content">
         <h2>🎨 Appearance Settings</h2>
 
         <div className="settings-info-card highlight">
             <h3>Theme Customization</h3>
             <p>
-                Personalize the look of your equation solver by adjusting the accent color.
+                Personalize the look of your equation solver by adjusting the theme and accent color.
                 Changes are applied in real-time across the entire application.
             </p>
+        </div>
+
+        <h3>Theme Mode</h3>
+        <div className="settings-group">
+            <div className="control-group">
+                <label>Color Theme</label>
+                <p className="control-description">Switch between light and dark interface themes</p>
+                <div className="theme-toggle-container">
+                    <button
+                        className={`theme-toggle-btn ${themeMode === 'dark' ? 'active' : ''}`}
+                        onClick={() => setThemeMode('dark')}
+                    >
+                        <span className="theme-icon">🌙</span>
+                        <span className="theme-label">Dark</span>
+                    </button>
+                    <button
+                        className={`theme-toggle-btn ${themeMode === 'light' ? 'active' : ''}`}
+                        onClick={() => setThemeMode('light')}
+                    >
+                        <span className="theme-icon">☀️</span>
+                        <span className="theme-label">Light</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <h3>Accent Color</h3>

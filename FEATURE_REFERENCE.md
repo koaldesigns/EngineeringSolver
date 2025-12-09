@@ -148,46 +148,39 @@ velocity = distance / time // Unit propagation
 ```
 
 ### Supported Unit Categories
+The system supports over 50 dimensional categories powered by Pint. Selected common units:
 
-#### Length
-`m`, `cm`, `mm`, `km`, `in`, `ft`, `yd`, `mi`, `um`, `nm`
+#### Base & Common
+`m`, `ft`, `in` (Length), `kg`, `lbm` (Mass), `s`, `min`, `hr` (Time), `K`, `degC`, `degF` (Temp)
 
-#### Mass
-`kg`, `g`, `mg`, `lb`, `lbm`, `oz`, `ton`
+#### Mechanical
+`N`, `lbf` (Force), `Pa`, `psi`, `bar` (Pressure), `J`, `BTU`, `cal` (Energy), `W`, `hp` (Power), `N*m` (Torque)
 
-#### Time
-`s`, `ms`, `min`, `hr`, `day`
+#### Thermal & Fluid
+`J/(kg*K)` (Specific Heat), `W/(m*K)` (Conductivity), `Pa*s` (Viscosity), `kg/s` (Flow Rate)
 
-#### Temperature
-`K`, `degC`, `C`, `degF`, `F`, `degR`, `R`
+#### Electrical & Magnetic
+`A`, `V`, `ohm` (Basic), `coulomb` (Charge), `farad` (Capacitance), `tesla`, `gauss` (B-Field)
 
-#### Pressure
-`Pa`, `kPa`, `MPa`, `bar`, `atm`, `psi`, `psia`
+> **Compound Units**: You can use any valid combination, e.g., `[J/(kg*K)]` or `[m/s^2]`.
 
-#### Energy
-`J`, `kJ`, `MJ`, `Btu`, `cal`, `kcal`, `Wh`, `kWh`
+### EES Compatibility Aliases & Rules
 
-#### Power
-`W`, `kW`, `MW`, `hp`
+To ensure ambiguity is resolved between EES conventions and standard SI units:
 
-#### Force
-`N`, `kN`, `lbf`
+| Symbol | Interpreted As | Use Full Name For |
+|--------|----------------|-------------------|
+| `C` | `degC` (Celsius) | `[coulomb]` (Charge) |
+| `F` | `degF` (Fahrenheit) | `[farad]` (Capacitance) |
+| `R` | `degR` (Rankine) | - |
+| `G` | Gravitational Constant | `[gauss]` (Magnetic Flux) |
+| `gauss`| `1e-4 tesla` (SI) | - |
+| `psia`, `psig` | `psi` | - |
+| `lbm` | `pound` (mass) | - |
+| `lbf` | `force_pound` | - |
+| `L` | `liter` | - |
 
-#### Angle
-`deg`, `rad`
-
-### EES Compatibility Aliases
-
-| EES Style | Interpreted As |
-|-----------|----------------|
-| `C` | `degC` (Celsius) |
-| `F` | `degF` (Fahrenheit) |
-| `R` | `degR` (Rankine) |
-| `psia`, `psig` | `psi` |
-| `lbm` | `pound` (mass) |
-| `lbf` | `force_pound` |
-| `L`, `liter` | `liter` |
-| `gal` | `gallon` |
+> **Note**: `gauss` is automatically converted to an SI-compatible definition (1 G = 10⁻⁴ T) to ensure consistency.
 
 ---
 

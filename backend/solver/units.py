@@ -35,6 +35,7 @@ class UnitRegistry:
             'liter': 'liter',
             'L': 'liter',
             'l': 'liter',
+            'gauss': 'gauss_si', # Force SI-compatible gauss
         }
     
     def Q_(self, value, unit_str):
@@ -57,6 +58,7 @@ class UnitRegistry:
         definitions = [
             "lbm = pound",
             "lbf = force_pound",
+            "gauss_si = 1e-4 * tesla", # Define SI-compatible gauss to avoid CGS dimension issues
             # "psia = psi", # psi is already defined, psia/psig are context dependent. We map them.
         ]
         for definition in definitions:
@@ -293,4 +295,325 @@ class UnitRegistry:
         
         # Format as numerator/(denominator)
         return f"{numerator}/({denominator})"
+
+    def get_compatible_units(self, unit_str: str) -> list:
+        """
+        Returns a list of compatible units for the given unit, based on dimensional analysis.
+        Uses Pint to determine the dimensionality and returns common engineering units.
+        
+        Args:
+            unit_str: The source unit string
+            
+        Returns:
+            List of compatible unit strings (may be empty if unit is unknown)
+        """
+        if not unit_str:
+            return []
+        
+        # Comprehensive mapping of dimensions to common units
+        # Keys are frozensets of (dimension_name, exponent) tuples
+        DIMENSION_TO_UNITS = {
+            # Length [L]
+            frozenset([('[length]', 1)]): ['m', 'cm', 'mm', 'km', 'ft', 'in', 'yd', 'mi'],
+            # Area [L^2]
+            frozenset([('[length]', 2)]): ['m^2', 'cm^2', 'ft^2', 'in^2', 'km^2'],
+            # Volume [L^3]
+            frozenset([('[length]', 3)]): ['m^3', 'L', 'mL', 'cm^3', 'ft^3', 'gal', 'in^3'],
+            # Mass [M]
+            frozenset([('[mass]', 1)]): ['kg', 'g', 'mg', 'lb', 'lbm', 'oz', 'ton'],
+            # Time [T]
+            frozenset([('[time]', 1)]): ['s', 'ms', 'min', 'h', 'hr', 'day'],
+            # Temperature [Θ]
+            frozenset([('[temperature]', 1)]): ['K', 'degC', 'degF', 'degR'],
+            # Current [I]
+            frozenset([('[current]', 1)]): ['A', 'mA', 'μA', 'kA'],
+            # Amount [N]  
+            frozenset([('[substance]', 1)]): ['mol', 'kmol', 'mmol'],
+            
+            # Velocity [L/T]
+            frozenset([('[length]', 1), ('[time]', -1)]): ['m/s', 'km/h', 'ft/s', 'mph', 'in/s', 'cm/s', 'mi/h'],
+            # Acceleration [L/T^2]
+            frozenset([('[length]', 1), ('[time]', -2)]): ['m/s^2', 'ft/s^2', 'in/s^2', 'cm/s^2', 'g0'],
+            # Force [M*L/T^2]
+            frozenset([('[mass]', 1), ('[length]', 1), ('[time]', -2)]): ['N', 'kN', 'MN', 'lbf', 'dyn', 'kgf'],
+            # Pressure [M/(L*T^2)]
+            frozenset([('[mass]', 1), ('[length]', -1), ('[time]', -2)]): ['Pa', 'kPa', 'MPa', 'bar', 'psi', 'atm', 'mmHg', 'inHg', 'torr'],
+            # Energy / Work / Torque [M*L^2/T^2]
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -2)]): [
+                'J', 'kJ', 'MJ', 'cal', 'kcal', 'Wh', 'kWh', 'BTU', 'eV', 'ft*lbf',  # Energy
+                'N*m', 'kN*m', 'in*lbf', 'kgf*m'                                     # Torque (merged to avoid overwrite)
+            ],
+            # Power [M*L^2/T^3]
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -3)]): ['W', 'kW', 'MW', 'hp', 'BTU/h', 'BTU/s', 'ft*lbf/s'],
+            # Frequency [1/T]
+            frozenset([('[time]', -1)]): ['Hz', 'kHz', 'MHz', 'GHz', 'rad/s', '1/s', 'rpm'],
+            
+            # Density [M/L^3]
+            frozenset([('[mass]', 1), ('[length]', -3)]): ['kg/m^3', 'g/cm^3', 'g/mL', 'lbm/ft^3', 'lb/ft^3', 'kg/L'],
+            # Mass flow rate [M/T]
+            frozenset([('[mass]', 1), ('[time]', -1)]): ['kg/s', 'kg/h', 'kg/min', 'g/s', 'lbm/s', 'lb/s', 'lbm/h', 'g/min'],
+            # Volume flow rate [L^3/T]
+            frozenset([('[length]', 3), ('[time]', -1)]): ['m^3/s', 'm^3/h', 'L/s', 'L/min', 'L/h', 'ft^3/s', 'ft^3/min', 'gal/min', 'gal/h'],
+            
+            # Specific energy [L^2/T^2] (J/kg = m^2/s^2)
+            frozenset([('[length]', 2), ('[time]', -2)]): ['J/kg', 'kJ/kg', 'MJ/kg', 'BTU/lb', 'BTU/lbm', 'Wh/kg', 'm^2/s^2'],
+            # Specific heat capacity [L^2/(T^2*Θ)] (J/(kg*K))
+            frozenset([('[length]', 2), ('[temperature]', -1), ('[time]', -2)]): ['J/(kg*K)', 'kJ/(kg*K)', 'BTU/(lb*R)', 'BTU/(lbm*R)', 'cal/(g*K)', 'J/(g*K)'],
+            # Thermal conductivity [M*L/(T^3*Θ)] (W/(m*K))
+            frozenset([('[mass]', 1), ('[length]', 1), ('[time]', -3), ('[temperature]', -1)]): ['W/(m*K)', 'W/(cm*K)', 'BTU/(h*ft*R)', 'BTU/(hr*ft*R)', 'W/(m*degC)'],
+            
+            # Dynamic viscosity [M/(L*T)] (Pa*s)
+            frozenset([('[mass]', 1), ('[length]', -1), ('[time]', -1)]): ['Pa*s', 'mPa*s', 'cP', 'P', 'lb/(ft*s)', 'kg/(m*s)', 'N*s/m^2'],
+            # Kinematic viscosity [L^2/T]
+            frozenset([('[length]', 2), ('[time]', -1)]): ['m^2/s', 'cm^2/s', 'ft^2/s', 'cSt', 'St'],
+            
+            # Momentum [M*L/T] (kg*m/s)
+            frozenset([('[mass]', 1), ('[length]', 1), ('[time]', -1)]): ['kg*m/s', 'N*s', 'lbm*ft/s', 'lb*ft/s', 'g*cm/s'],
+            # Moment/Torque [M*L^2/T^2] (N*m) - same as energy but different usage
+            # Merged with Energy above to avoid map overwrites for same dimension key
+            
+            # Heat flux [M/T^3] (W/m^2)
+            frozenset([('[mass]', 1), ('[time]', -3)]): ['W/m^2', 'kW/m^2', 'BTU/(h*ft^2)', 'W/cm^2'],
+            # Entropy [M*L^2/(T^2*Θ)] (J/K)
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -2), ('[temperature]', -1)]): ['J/K', 'kJ/K', 'BTU/R', 'cal/K'],
+            
+            # Voltage [M*L^2/(T^3*I)]
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -3), ('[current]', -1)]): ['V', 'mV', 'kV', 'MV'],
+            # Resistance [M*L^2/(T^3*I^2)]
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -3), ('[current]', -2)]): ['ohm', 'kohm', 'Mohm', 'mOhm'],
+            # Capacitance [T^4*I^2/(M*L^2)]
+            # Use 'farad' directly because 'F' maps to Fahrenheit in this system
+            frozenset([('[time]', 4), ('[current]', 2), ('[mass]', -1), ('[length]', -2)]): ['farad', 'mF', 'μF', 'nF', 'pF'],
+            # Inductance [M*L^2/(T^2*I^2)]
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -2), ('[current]', -2)]): ['H', 'mH', 'μH', 'nH'],
+            
+            # ===== Additional Engineering Dimensions =====
+            
+            # Specific volume [L^3/M] (m³/kg) - inverse of density
+            frozenset([('[length]', 3), ('[mass]', -1)]): ['m^3/kg', 'L/kg', 'cm^3/g', 'ft^3/lb', 'ft^3/lbm'],
+            
+            # Second moment of area [L^4] (m⁴) - area moment of inertia
+            frozenset([('[length]', 4)]): ['m^4', 'cm^4', 'mm^4', 'in^4', 'ft^4'],
+            
+            # Stiffness / Spring constant / Surface tension [M/T^2] (N/m = kg/s²)
+            # Combined with Energy per area in later section (same dimension)
+            
+            # Heat transfer coefficient [M/(T^3*Θ)] (W/(m²*K))
+            frozenset([('[mass]', 1), ('[time]', -3), ('[temperature]', -1)]): ['W/(m^2*K)', 'W/(m^2*degC)', 'BTU/(h*ft^2*R)', 'BTU/(hr*ft^2*R)'],
+            
+            # Thermal resistance [T^3*Θ/M] (K/W)
+            frozenset([('[time]', 3), ('[temperature]', 1), ('[mass]', -1)]): ['K/W', 'degC/W', 'R*h/BTU'],
+            
+            # Angular acceleration [1/T^2] (rad/s²)
+            frozenset([('[time]', -2)]): ['rad/s^2', 'deg/s^2', '1/s^2', 'rpm/s'],
+            
+            # Linear charge density [I*T/L] (C/m)
+            # Use 'coulomb' because 'C' maps to Celsius
+            frozenset([('[current]', 1), ('[time]', 1), ('[length]', -1)]): ['coulomb/m', 'coulomb/cm'],
+            
+            # Electric field [M*L/(T^3*I)] (V/m)
+            frozenset([('[mass]', 1), ('[length]', 1), ('[time]', -3), ('[current]', -1)]): ['V/m', 'kV/m', 'V/cm', 'V/mm'],
+            
+            # Magnetic flux [M*L^2/(T^2*I)] (Wb)
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -2), ('[current]', -1)]): ['Wb', 'mWb', 'μWb'],
+            
+            # Magnetic flux density [M/(T^2*I)] (T)
+            # Use 'gauss' instead of 'G' to avoid confusion with Giga prefix (though mapped via alias)
+            frozenset([('[mass]', 1), ('[time]', -2), ('[current]', -1)]): ['T', 'mT', 'μT', 'gauss'],
+            
+            # Molar mass [M/N] (kg/mol)
+            frozenset([('[mass]', 1), ('[substance]', -1)]): ['kg/mol', 'g/mol', 'lb/mol'],
+            
+            # Molar volume [L^3/N] (m³/mol)
+            frozenset([('[length]', 3), ('[substance]', -1)]): ['m^3/mol', 'L/mol', 'cm^3/mol'],
+            
+            # Concentration [N/L^3] (mol/m³)
+            frozenset([('[substance]', 1), ('[length]', -3)]): ['mol/m^3', 'mol/L', 'mmol/L', 'mol/cm^3'],
+            
+            # Thermal power/temperature [M*L^2/(T^3*Θ)] (W/K)
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -3), ('[temperature]', -1)]): ['W/K', 'kW/K', 'BTU/(h*R)'],
+            
+            # ===== Comprehensive Additional Engineering Dimensions =====
+            
+            # --- Mechanical / Structural ---
+            
+            # Section modulus [L^3] (m³) - used in beam bending calculations
+            # Already covered by Volume [L^3]
+            
+            # Curvature [1/L] (1/m)
+            frozenset([('[length]', -1)]): ['1/m', '1/cm', '1/mm', '1/ft', '1/in'],
+            
+            # Angular momentum [M*L^2/T] (kg·m²/s)
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -1)]): ['kg*m^2/s', 'N*m*s', 'J*s'],
+            
+            # Moment of inertia (rotational) [M*L^2] (kg·m²)
+            frozenset([('[mass]', 1), ('[length]', 2)]): ['kg*m^2', 'kg*cm^2', 'lb*ft^2', 'lb*in^2', 'g*cm^2'],
+            
+            # Strain energy density [M/(L*T^2)] (J/m³ = Pa)
+            # Already covered by Pressure
+            
+            # Stress intensity factor [M/(L^0.5*T^2)] - Not cleanly representable with integer exponents
+            # Skipping - fractional exponents not supported
+            
+            # --- Fluid Mechanics ---
+            
+            # Volumetric flow per area [L/T] (m/s) - superficial velocity
+            # Already covered by Velocity
+            
+            # Permeability [L^2] (m² or darcy)
+            # Already covered by Area
+            
+            # Hydraulic conductivity [L/T] 
+            # Already covered by Velocity
+            
+            # --- Heat Transfer ---
+            
+            # Thermal diffusivity [L^2/T] (m²/s)
+            # Already covered by Kinematic viscosity
+            
+            # Volumetric heat capacity [M/(L*T^2*Θ)] (J/(m³·K))
+            frozenset([('[mass]', 1), ('[length]', -1), ('[time]', -2), ('[temperature]', -1)]): ['J/(m^3*K)', 'kJ/(m^3*K)', 'BTU/(ft^3*R)'],
+            
+            # --- Electrical / Electronics ---
+            
+            # Conductance [T^3*I^2/(M*L^2)] (S = 1/Ω)
+            frozenset([('[time]', 3), ('[current]', 2), ('[mass]', -1), ('[length]', -2)]): ['S', 'mS', 'μS', 'kS'],
+            
+            # Conductivity [T^3*I^2/(M*L^3)] (S/m)
+            frozenset([('[time]', 3), ('[current]', 2), ('[mass]', -1), ('[length]', -3)]): ['S/m', 'mS/cm', 'μS/cm'],
+            
+            # Resistivity [M*L^3/(T^3*I^2)] (Ω·m)
+            frozenset([('[mass]', 1), ('[length]', 3), ('[time]', -3), ('[current]', -2)]): ['ohm*m', 'ohm*cm', 'ohm*mm'],
+            
+            # Electric charge [I*T] (C = A·s)
+            # Use 'coulomb' directly because 'C' maps to Celsius in this system
+            frozenset([('[current]', 1), ('[time]', 1)]): ['coulomb', 'mC', 'μC', 'nC', 'pC', 'A*h', 'mA*h'],
+            
+            # Capacitance per length [T^4*I^2/(M*L^3)] (F/m)
+            frozenset([('[time]', 4), ('[current]', 2), ('[mass]', -1), ('[length]', -3)]): ['F/m', 'pF/m', 'nF/m'],
+            
+            # Inductance per length [M*L/(T^2*I^2)] (H/m)
+            frozenset([('[mass]', 1), ('[length]', 1), ('[time]', -2), ('[current]', -2)]): ['H/m', 'mH/m', 'μH/m'],
+            
+            # Current density [I/L^2] (A/m²)
+            frozenset([('[current]', 1), ('[length]', -2)]): ['A/m^2', 'A/cm^2', 'A/mm^2', 'mA/cm^2'],
+            
+            # Electric potential gradient [M*L/(T^3*I)] (V/m)
+            # Already covered by Electric field
+            
+            # Magnetic field strength [I/L] (A/m)
+            frozenset([('[current]', 1), ('[length]', -1)]): ['A/m', 'A/cm', 'kA/m', 'Oe'],
+            
+            # Permittivity [T^4*I^2/(M*L^3)] (F/m)
+            # Same as Capacitance per length
+            
+            # Permeability [M*L/(T^2*I^2)] (H/m)
+            # Same as Inductance per length
+            
+            # --- Radiation / Optics ---
+            
+            # Luminous intensity [candela] - base unit, handle separately
+            frozenset([('[luminosity]', 1)]): ['cd', 'mcd', 'kcd'],
+            
+            # Luminous flux [cd*sr] (lumen)
+            # Pint may not track solid angle - skip for now
+            
+            # Illuminance [cd*sr/L^2] (lux = lm/m²)
+            # Pint may not track solid angle - skip for now
+            
+            # Radioactivity [1/T] (Bq = 1/s)
+            # Already covered by Frequency
+            
+            # Absorbed dose [L^2/T^2] (Gy = J/kg = m²/s²)
+            # Already covered by Specific energy
+            
+            # --- Acoustics ---
+            
+            # Acoustic impedance [M/(L^2*T)] (Pa·s/m = kg/(m²·s))
+            frozenset([('[mass]', 1), ('[length]', -2), ('[time]', -1)]): ['Pa*s/m', 'kg/(m^2*s)', 'rayl'],
+            
+            # --- Chemistry / Chemical Engineering ---
+            
+            # Molar flow rate [N/T] (mol/s)
+            frozenset([('[substance]', 1), ('[time]', -1)]): ['mol/s', 'mol/min', 'mol/h', 'kmol/h', 'kmol/s'],
+            
+            # Molar flux [N/(L^2*T)] (mol/(m²·s))
+            frozenset([('[substance]', 1), ('[length]', -2), ('[time]', -1)]): ['mol/(m^2*s)', 'mol/(cm^2*s)', 'kmol/(m^2*s)'],
+            
+            # Reaction rate [N/(L^3*T)] (mol/(m³·s))
+            frozenset([('[substance]', 1), ('[length]', -3), ('[time]', -1)]): ['mol/(m^3*s)', 'mol/(L*s)', 'mol/(L*min)'],
+            
+            # Catalytic activity [N/T] (katal = mol/s)
+            # Same as Molar flow rate
+            
+            # Molar energy [M*L^2/(T^2*N)] (J/mol)
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -2), ('[substance]', -1)]): ['J/mol', 'kJ/mol', 'cal/mol', 'kcal/mol', 'eV/mol'],
+            
+            # Molar entropy/heat capacity [M*L^2/(T^2*N*Θ)] (J/(mol·K))
+            frozenset([('[mass]', 1), ('[length]', 2), ('[time]', -2), ('[substance]', -1), ('[temperature]', -1)]): ['J/(mol*K)', 'kJ/(mol*K)', 'cal/(mol*K)'],
+            
+            # --- Additional Mechanical ---
+            
+            # Compliance [T^2/M] (m/N = 1/(N/m))
+            frozenset([('[time]', 2), ('[mass]', -1)]): ['m/N', 'mm/N', 'in/lbf'],
+            
+            # Mass per length [M/L] (kg/m) - linear density
+            frozenset([('[mass]', 1), ('[length]', -1)]): ['kg/m', 'g/m', 'g/cm', 'lb/ft', 'lb/in'],
+            
+            # Mass per area [M/L^2] (kg/m²) - areal density
+            frozenset([('[mass]', 1), ('[length]', -2)]): ['kg/m^2', 'g/cm^2', 'lb/ft^2', 'oz/yd^2', 'g/m^2'],
+            
+            # Force per length / Surface tension / Energy per area [M/T^2] (N/m = J/m²)
+            # Note: N/m and J/m² have the same dimension but different physical meanings
+            frozenset([('[mass]', 1), ('[time]', -2)]): ['N/m', 'kN/m', 'lbf/in', 'lbf/ft', 'N/mm', 'J/m^2', 'mJ/m^2'],
+            
+            # Pressure gradient [M/(L^2*T^2)] (Pa/m)
+            frozenset([('[mass]', 1), ('[length]', -2), ('[time]', -2)]): ['Pa/m', 'kPa/m', 'psi/ft', 'bar/m'],
+            
+            # Power per length [M*L/T^3] (W/m)
+            frozenset([('[mass]', 1), ('[length]', 1), ('[time]', -3)]): ['W/m', 'kW/m', 'BTU/(h*ft)'],
+            
+            # Power per volume [M/(L*T^3)] (W/m³)
+            frozenset([('[mass]', 1), ('[length]', -1), ('[time]', -3)]): ['W/m^3', 'kW/m^3', 'BTU/(h*ft^3)'],
+            
+            # --- Miscellaneous ---
+            
+            # Jerk [L/T^3] (m/s³)
+            frozenset([('[length]', 1), ('[time]', -3)]): ['m/s^3', 'ft/s^3', 'in/s^3'],
+            
+            # Fuel efficiency [1/L^2] (1/m² or L/100km as special case)
+            frozenset([('[length]', -2)]): ['1/m^2', 'L/(100*km)', 'gal/mi'],  # Note: L/100km not directly compatible
+            
+            # Specific fuel consumption [T/L^2] (kg/(N·s) for jets, simplified)
+            # Complex - skip
+            
+            # Angle (dimensionless but tracked)
+            frozenset(): ['rad', 'deg', 'mrad', 'arcmin', 'arcsec'],
+        }
+        
+        try:
+            # Normalize and parse the unit
+            normalized = self.normalize_unit(unit_str)
+            q = self.Q_(1, normalized)
+            
+            # Get the dimensionality as a dict
+            dim = q.dimensionality
+            
+            # Convert to frozenset for lookup
+            dim_key = frozenset((str(k), int(v)) for k, v in dim.items())
+            
+            # Look up in our mapping
+            if dim_key in DIMENSION_TO_UNITS:
+                suggestions = DIMENSION_TO_UNITS[dim_key]
+                # Filter out the input unit itself (in various forms)
+                input_normalized = normalized.lower().replace(' ', '').replace('*', '').replace('·', '')
+                return [u for u in suggestions 
+                        if u.lower().replace(' ', '').replace('*', '').replace('·', '') != input_normalized]
+            
+            # If not found in our dict, return empty (unknown dimension combination)
+            return []
+            
+        except Exception as e:
+            # Unit parsing failed
+            return []
 

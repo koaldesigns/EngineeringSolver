@@ -62,6 +62,85 @@ export const PlotPanel = ({ plotConfigs }) => {
         setExpandedPlot(expandedPlot === idx ? null : idx);
     };
 
+    // Detect current theme
+    const isDarkMode = document.documentElement.getAttribute('data-theme') !== 'light';
+
+    // Helper to deep merge layout objects (preserves nested properties like axis titles)
+    const mergeLayouts = (baseLayout, isDark) => {
+        const colors = isDark ? {
+            paper: 'rgba(30, 30, 30, 0.95)',
+            plot: 'rgba(30, 30, 30, 0.95)',
+            text: '#e4e4e7',
+            grid: 'rgba(255,255,255,0.1)',
+            zero: 'rgba(255,255,255,0.2)',
+            tick: '#a1a1aa',
+            legendBg: 'rgba(45, 45, 48, 0.9)'
+        } : {
+            paper: 'rgba(255, 255, 255, 0.98)',
+            plot: 'rgba(255, 255, 255, 0.98)',
+            text: '#000000',
+            grid: 'rgba(0,0,0,0.1)',
+            zero: 'rgba(0,0,0,0.2)',
+            tick: '#18181b',
+            legendBg: 'rgba(255, 255, 255, 0.95)'
+        };
+
+        // Start with base layout
+        const result = { ...baseLayout };
+
+        // Apply theme colors
+        result.paper_bgcolor = colors.paper;
+        result.plot_bgcolor = colors.plot;
+        result.font = { ...(baseLayout.font || {}), color: colors.text, size: 12 };
+
+        // Merge title - preserve text, add color
+        if (baseLayout.title) {
+            const titleText = typeof baseLayout.title === 'string' ? baseLayout.title : baseLayout.title?.text;
+            result.title = {
+                text: titleText,
+                font: { color: colors.text, size: 14 }
+            };
+        }
+
+        // Merge legend
+        result.legend = {
+            ...(baseLayout.legend || {}),
+            bgcolor: colors.legendBg,
+            font: { color: colors.text }
+        };
+
+        // Merge xaxis - preserve title text, add colors
+        if (baseLayout.xaxis) {
+            const xTitle = typeof baseLayout.xaxis.title === 'string'
+                ? baseLayout.xaxis.title
+                : baseLayout.xaxis.title?.text;
+            result.xaxis = {
+                ...baseLayout.xaxis,
+                gridcolor: colors.grid,
+                zerolinecolor: colors.zero,
+                tickfont: { ...(baseLayout.xaxis.tickfont || {}), color: colors.tick },
+                title: xTitle ? { text: xTitle, font: { color: colors.text } } : undefined
+            };
+        }
+
+        // Merge yaxis - preserve title text, add colors
+        if (baseLayout.yaxis) {
+            const yTitle = typeof baseLayout.yaxis.title === 'string'
+                ? baseLayout.yaxis.title
+                : baseLayout.yaxis.title?.text;
+            result.yaxis = {
+                ...baseLayout.yaxis,
+                gridcolor: colors.grid,
+                zerolinecolor: colors.zero,
+                tickfont: { ...(baseLayout.yaxis.tickfont || {}), color: colors.tick },
+                title: yTitle ? { text: yTitle, font: { color: colors.text } } : undefined
+            };
+        }
+
+        result.autosize = true;
+        return result;
+    };
+
     return (
         <div className="plot-panel">
             <div className="plot-panel-header">
@@ -77,10 +156,7 @@ export const PlotPanel = ({ plotConfigs }) => {
                     >
                         <Plot
                             data={config.data}
-                            layout={{
-                                ...config.layout,
-                                autosize: true,
-                            }}
+                            layout={mergeLayouts(config.layout, isDarkMode)}
                             config={{
                                 responsive: true,
                                 displayModeBar: true,

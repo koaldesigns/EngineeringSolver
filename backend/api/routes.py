@@ -53,6 +53,26 @@ class SolveResponse(BaseModel):
     plots: Optional[List[Dict[str, Any]]] = None  # Plotly configurations
     is_array_solve: Optional[bool] = None
 
+class ConvertUnitRequest(BaseModel):
+    value: float
+    from_unit: str
+    to_unit: str
+
+class ConvertUnitResponse(BaseModel):
+    success: bool
+    value: Optional[float] = None
+    unit: Optional[str] = None  # Formatted display unit
+    factor: Optional[float] = None  # Conversion factor (to_value = from_value * factor)
+    error: Optional[str] = None
+
+class UnitSuggestionsRequest(BaseModel):
+    unit: str
+
+class UnitSuggestionsResponse(BaseModel):
+    success: bool
+    suggestions: List[str] = []
+    error: Optional[str] = None
+
 @router.post("/solve", response_model=SolveResponse)
 async def solve_equations(request: SolveRequest):
     try:
@@ -130,6 +150,59 @@ async def get_thermo_prop(request: ThermoRequest):
         return {"value": val}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/convert-unit", response_model=ConvertUnitResponse)
+async def convert_unit(request: ConvertUnitRequest):
+    """
+    Convert a value from one unit to another using Pint.
+    Supports compound units like m/s, kg/m^3, J/(kg*K), etc.
+    Returns the converted value, formatted unit, and conversion factor.
+    """
+    try:
+        # Use the existing UnitRegistry for conversion
+        converted_value = units.convert(request.value, request.from_unit, request.to_unit)
+        
+        # Calculate conversion factor (useful for caching)
+        factor = converted_value / request.value if request.value != 0 else units.convert(1.0, request.from_unit, request.to_unit)
+        
+        # Format the display unit
+        formatted_unit = units.format_unit_display(request.to_unit)
+        
+        return {
+            "success": True,
+            "value": converted_value,
+            "unit": formatted_unit or request.to_unit,
+            "factor": factor
+        }
+    except ValueError as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Conversion failed: {str(e)}"
+        }
+
+@router.post("/unit-suggestions", response_model=UnitSuggestionsResponse)
+async def get_unit_suggestions(request: UnitSuggestionsRequest):
+    """
+    Get compatible unit suggestions for a given unit based on dimensional analysis.
+    Uses Pint to determine the dimensionality and returns common engineering units.
+    """
+    try:
+        suggestions = units.get_compatible_units(request.unit)
+        return {
+            "success": True,
+            "suggestions": suggestions
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "suggestions": [],
+            "error": str(e)
+        }
 
 
 # ============== Custom Tabs API ==============

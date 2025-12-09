@@ -470,73 +470,63 @@ const UnitsSection = () => (
         <div className="info-card highlight">
             <h4>Powered by Pint</h4>
             <p>
-                The solver uses the Pint library for unit handling, supporting hundreds of physical units
-                with automatic conversion and dimensional analysis.
+                The solver uses the Pint library for unit handling, supporting <strong>over 50 dimensional categories</strong>
+                and hundreds of physical units with automatic conversion and dimensional analysis.
             </p>
         </div>
 
         <h3>Specifying Units</h3>
         <div className="code-example">
-            <p>// Units in square brackets after values:</p>
+            <p>// Simple units:</p>
             <code>length = 10 [m]</code>
             <code>time = 5 [s]</code>
-            <code>velocity = length / time  // Automatically: 2 m/s</code>
             <br />
-            <p>// LHS unit declaration:</p>
-            <code>Area [m^2] = length^2</code>
+            <p>// Compound units are fully supported:</p>
+            <code>c_p = 4186 [J/(kg*K)]</code>
+            <code>density = 1000 [kg/m^3]</code>
+            <code>viscosity = 0.001 [Pa*s]</code>
         </div>
 
-        <h3>Supported Unit Categories</h3>
+        <h3>Supported Unit Categories (Selected)</h3>
 
-        <h4>Length</h4>
-        <div className="code-inline-list">
-            <code>m</code> <code>cm</code> <code>mm</code> <code>km</code>
-            <code>in</code> <code>ft</code> <code>yd</code> <code>mi</code>
-            <code>um</code> <code>nm</code>
-        </div>
-
-        <h4>Mass</h4>
-        <div className="code-inline-list">
-            <code>kg</code> <code>g</code> <code>mg</code>
-            <code>lb</code> <code>lbm</code> <code>oz</code> <code>ton</code>
-        </div>
-
-        <h4>Time</h4>
-        <div className="code-inline-list">
-            <code>s</code> <code>ms</code> <code>min</code> <code>hr</code> <code>day</code>
-        </div>
-
-        <h4>Temperature</h4>
-        <div className="code-inline-list">
-            <code>K</code> <code>degC</code> <code>C</code>
-            <code>degF</code> <code>F</code> <code>degR</code> <code>R</code>
-        </div>
-
-        <h4>Pressure</h4>
-        <div className="code-inline-list">
-            <code>Pa</code> <code>kPa</code> <code>MPa</code> <code>bar</code>
-            <code>atm</code> <code>psi</code> <code>psia</code>
-        </div>
-
-        <h4>Energy</h4>
-        <div className="code-inline-list">
-            <code>J</code> <code>kJ</code> <code>MJ</code>
-            <code>Btu</code> <code>cal</code> <code>kcal</code> <code>Wh</code> <code>kWh</code>
-        </div>
-
-        <h4>Power</h4>
-        <div className="code-inline-list">
-            <code>W</code> <code>kW</code> <code>MW</code> <code>hp</code>
-        </div>
-
-        <h4>Force</h4>
-        <div className="code-inline-list">
-            <code>N</code> <code>kN</code> <code>lbf</code>
-        </div>
-
-        <h4>Angle</h4>
-        <div className="code-inline-list">
-            <code>deg</code> <code>rad</code>
+        <div className="feature-grid">
+            <div className="feature-card">
+                <h4>Base & Common</h4>
+                <div className="code-inline-list">
+                    <code>m</code> <code>ft</code> <code>in</code> (Length) <br />
+                    <code>kg</code> <code>lbm</code> <code>slug</code> (Mass) <br />
+                    <code>s</code> <code>min</code> <code>hr</code> (Time) <br />
+                    <code>K</code> <code>degC</code> <code>degF</code> (Temp)
+                </div>
+            </div>
+            <div className="feature-card">
+                <h4>Mechanical</h4>
+                <div className="code-inline-list">
+                    <code>N</code> <code>lbf</code> (Force) <br />
+                    <code>Pa</code> <code>psi</code> <code>bar</code> (Pressure) <br />
+                    <code>J</code> <code>BTU</code> <code>cal</code> (Energy) <br />
+                    <code>W</code> <code>hp</code> (Power) <br />
+                    <code>N*m</code> (Torque) <code>N/m</code> (Stiffness)
+                </div>
+            </div>
+            <div className="feature-card">
+                <h4>Thermal & Fluid</h4>
+                <div className="code-inline-list">
+                    <code>J/(kg*K)</code> (Specific Heat) <br />
+                    <code>W/(m*K)</code> (Conductivity) <br />
+                    <code>Pa*s</code> <code>cP</code> (Viscosity) <br />
+                    <code>kg/s</code> <code>m^3/h</code> (Flow Rate)
+                </div>
+            </div>
+            <div className="feature-card">
+                <h4>Electrical & Magnetic</h4>
+                <div className="code-inline-list">
+                    <code>A</code> <code>V</code> <code>ohm</code> (Basic) <br />
+                    <code>coulomb</code> (Charge) <br />
+                    <code>farad</code> (Capacitance) <br />
+                    <code>tesla</code> <code>gauss</code> (B-Field)
+                </div>
+            </div>
         </div>
 
         <h3>Unit Conversion Function</h3>
@@ -546,26 +536,36 @@ const UnitsSection = () => (
             <p>// Examples:</p>
             <code>T_F = convert(100, 'C', 'F')  // 212</code>
             <code>P_psi = convert(1, 'atm', 'psi')  // 14.696</code>
-            <code>L_ft = convert(10, 'm', 'ft')  // 32.808</code>
+            <code>B_T = convert(10000, 'gauss', 'T') // 1.0</code>
         </div>
 
-        <h3>EES Unit Aliases</h3>
-        <p>For compatibility with EES notation, these aliases are supported:</p>
+        <h3>Important Unit Aliases & Rules</h3>
+        <p>To ensure ambiguity is resolved, we enforce specific rules for single-letter units:</p>
         <table className="doc-table">
             <thead>
-                <tr><th>EES Style</th><th>Interpreted As</th></tr>
+                <tr><th>Symbol</th><th>Interpreted As</th><th>Use Full Name For</th></tr>
             </thead>
             <tbody>
-                <tr><td><code>C</code></td><td><code>degC</code> (Celsius)</td></tr>
-                <tr><td><code>F</code></td><td><code>degF</code> (Fahrenheit)</td></tr>
-                <tr><td><code>R</code></td><td><code>degR</code> (Rankine)</td></tr>
-                <tr><td><code>psia</code>, <code>psig</code></td><td><code>psi</code></td></tr>
-                <tr><td><code>lbm</code></td><td><code>pound</code> (mass)</td></tr>
-                <tr><td><code>lbf</code></td><td><code>force_pound</code></td></tr>
-                <tr><td><code>L</code>, <code>liter</code></td><td><code>liter</code></td></tr>
-                <tr><td><code>gal</code></td><td><code>gallon</code></td></tr>
+                <tr><td><code>C</code></td><td><strong>Celsius</strong> (degC)</td><td><code>coulomb</code> (Charge)</td></tr>
+                <tr><td><code>F</code></td><td><strong>Fahrenheit</strong> (degF)</td><td><code>farad</code> (Capacitance)</td></tr>
+                <tr><td><code>K</code></td><td><strong>Kelvin</strong></td><td>-</td></tr>
+                <tr><td><code>R</code></td><td><strong>Rankine</strong> (degR)</td><td>-</td></tr>
+                <tr><td><code>G</code></td><td><strong>Gravitational Const</strong> / Giga</td><td><code>gauss</code> (Use full name)</td></tr>
             </tbody>
         </table>
+
+        <div className="info-card">
+            <h4>💡 Electromagnetic Units</h4>
+            <p>
+                For units like <strong>coulomb</strong>, <strong>farad</strong>, and <strong>gauss</strong>, please use the
+                full name in brackets (e.g., <code>[coulomb]</code>, <code>[gauss]</code>). The single letters <code>C</code> and <code>F</code>
+                are reserved for temperature to match EES conventions.
+            </p>
+            <p>
+                Note: <code>gauss</code> is automatically converted to an SI-compatible definition (1 G = 10⁻⁴ T) to ensure
+                it works seamlessly with other SI units.
+            </p>
+        </div>
 
         <h3>Unit Validation & Warnings</h3>
         <p>The solver performs dimensional analysis and generates warnings for:</p>

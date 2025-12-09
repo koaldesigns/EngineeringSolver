@@ -55,7 +55,7 @@
     border-radius: 8px;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--transition-normal, 200ms ease);
     text-align: left;
 }
 
@@ -82,7 +82,9 @@
 
 .doc-content {
     flex: 1;
-    background: var(--bg-secondary);
+    background: var(--glass-bg, var(--bg-secondary));
+    backdrop-filter: var(--glass-blur, blur(12px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(12px));
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 2rem;
@@ -287,7 +289,8 @@
 .feature-card:hover {
     border-color: var(--accent-primary);
     background: var(--accent-glow);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
 .feature-icon {

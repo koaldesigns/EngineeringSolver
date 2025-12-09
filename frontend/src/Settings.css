@@ -97,7 +97,9 @@
 /* Content Area */
 .settings-content {
     flex: 1;
-    background: var(--bg-secondary);
+    background: var(--glass-bg, var(--bg-secondary));
+    backdrop-filter: var(--glass-blur, blur(12px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(12px));
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 2rem;
@@ -291,6 +293,50 @@ input[type="range"]::-webkit-slider-thumb:hover {
     border-color: var(--accent-primary);
     color: var(--accent-primary);
     background: var(--accent-glow);
+}
+
+/* Theme Toggle */
+.theme-toggle-container {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-normal, 200ms ease);
+    flex: 1;
+    justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.theme-toggle-btn.active {
+    background: var(--accent-glow);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.theme-toggle-btn .theme-icon {
+    font-size: 1.2rem;
+}
+
+.theme-toggle-btn .theme-label {
+    font-weight: 500;
+    font-size: 0.95rem;
 }
 
 /* Feature List (Coming Soon items) */
