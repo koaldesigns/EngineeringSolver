@@ -29,11 +29,21 @@ app.add_middleware(
 async def global_exception_handler(request: Request, exc: Exception):
     """Handle all unhandled exceptions with proper CORS headers."""
     error_detail = str(exc)
-    print(f"Unhandled exception: {error_detail}")
-    print(traceback.format_exc())
+    print(f"Unhandled exception: {error_detail}", flush=True)
+    print(traceback.format_exc(), flush=True)
+    
+    # Explicitly add CORS headers to error responses
+    # This is needed because some reverse proxies strip CORS headers on 500s
+    origin = request.headers.get("origin", "*")
     return JSONResponse(
         status_code=500,
         content={"detail": f"Internal server error: {error_detail}"},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
     )
 
 
@@ -96,3 +106,43 @@ async def database_health_check():
     except Exception as e:
         return {"status": "error", "database": "disconnected", "error": str(e)}
 
+
+@app.get("/health/auth")
+async def auth_health_check():
+    """Check auth configuration and user table."""
+    import os
+    from models import User
+    
+    try:
+        db = SessionLocal()
+        try:
+            # Check environment variables (don't expose password)
+            admin_username = os.environ.get("ADMIN_USERNAME")
+            admin_password_set = bool(os.environ.get("ADMIN_PASSWORD"))
+            jwt_secret_set = bool(os.environ.get("JWT_SECRET"))
+            
+            # Check if users table exists and count users
+            try:
+                user_count = db.query(User).count()
+                admin_exists = db.query(User).filter(User.username == admin_username).first() is not None if admin_username else False
+            except Exception as table_err:
+                return {
+                    "status": "error",
+                    "error": f"User table issue: {str(table_err)}",
+                    "admin_username_set": bool(admin_username),
+                    "admin_password_set": admin_password_set,
+                }
+            
+            return {
+                "status": "ok",
+                "admin_username_set": bool(admin_username),
+                "admin_username": admin_username,  # Show the username for debugging
+                "admin_password_set": admin_password_set,
+                "jwt_secret_set": jwt_secret_set,
+                "user_count": user_count,
+                "admin_exists": admin_exists,
+            }
+        finally:
+            db.close()
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
