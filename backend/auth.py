@@ -25,14 +25,29 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False)
 
 
+def _truncate_password(password: str) -> str:
+    """Truncate password to 72 bytes (bcrypt limit) while preserving UTF-8 validity."""
+    encoded = password.encode('utf-8')
+    if len(encoded) <= 72:
+        return password
+    # Truncate to 72 bytes, ensuring valid UTF-8
+    truncated = encoded[:72]
+    # Decode, ignoring incomplete multi-byte sequences at the end
+    return truncated.decode('utf-8', errors='ignore')
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    # Truncate to handle bcrypt's 72-byte limit
+    truncated = _truncate_password(plain_password)
+    return pwd_context.verify(truncated, hashed_password)
 
 
 def hash_password(password: str) -> str:
     """Hash a password for storage."""
-    return pwd_context.hash(password)
+    # Truncate to handle bcrypt's 72-byte limit
+    truncated = _truncate_password(password)
+    return pwd_context.hash(truncated)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

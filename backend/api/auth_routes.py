@@ -66,14 +66,19 @@ def init_tokens_if_needed(db: Session):
 
 def create_admin_if_needed(db: Session):
     """Create admin account from environment variables if not exists."""
-    admin_username = os.environ.get("ADMIN_USERNAME")
-    admin_password = os.environ.get("ADMIN_PASSWORD")
+    admin_username = os.environ.get("ADMIN_USERNAME", "").strip()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "").strip()
     
     if not admin_username or not admin_password:
         return
     
+    # Debug logging
+    print(f"Admin username: '{admin_username}' (len={len(admin_username)})", flush=True)
+    print(f"Admin password length: {len(admin_password)} chars, {len(admin_password.encode('utf-8'))} bytes", flush=True)
+    
     existing_admin = db.query(User).filter(User.username == admin_username).first()
     if existing_admin:
+        print(f"Admin account '{admin_username}' already exists.", flush=True)
         return
     
     admin_user = User(
@@ -89,7 +94,7 @@ def create_admin_if_needed(db: Session):
     db.add(prefs)
     
     db.commit()
-    print(f"Admin account '{admin_username}' created.")
+    print(f"Admin account '{admin_username}' created.", flush=True)
 
 
 # ============== Routes ==============
