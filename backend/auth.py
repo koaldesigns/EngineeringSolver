@@ -2,10 +2,10 @@
 Authentication utilities: password hashing, JWT tokens, and session management.
 """
 import os
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -18,36 +18,31 @@ SECRET_KEY = os.environ.get("JWT_SECRET", "dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 72  # 72-hour session
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 # Bearer token scheme
 security = HTTPBearer(auto_error=False)
 
 
-def _truncate_password(password: str) -> str:
-    """Truncate password to 72 bytes (bcrypt limit) while preserving UTF-8 validity."""
+def _truncate_password(password: str) -> bytes:
+    """Truncate password to 72 bytes (bcrypt limit) and return as bytes."""
     encoded = password.encode('utf-8')
-    if len(encoded) <= 72:
-        return password
-    # Truncate to 72 bytes, ensuring valid UTF-8
-    truncated = encoded[:72]
-    # Decode, ignoring incomplete multi-byte sequences at the end
-    return truncated.decode('utf-8', errors='ignore')
+    if len(encoded) > 72:
+        encoded = encoded[:72]
+    return encoded
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    # Truncate to handle bcrypt's 72-byte limit
-    truncated = _truncate_password(plain_password)
-    return pwd_context.verify(truncated, hashed_password)
+    password_bytes = _truncate_password(plain_password)
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 
 def hash_password(password: str) -> str:
     """Hash a password for storage."""
-    # Truncate to handle bcrypt's 72-byte limit
-    truncated = _truncate_password(password)
-    return pwd_context.hash(truncated)
+    password_bytes = _truncate_password(password)
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
