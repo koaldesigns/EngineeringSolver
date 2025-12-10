@@ -10,4 +10,5 @@ plotly
 sqlalchemy
 psycopg2-binary
 bcrypt
+passlib[bcrypt]
 python-jose[cryptography]
